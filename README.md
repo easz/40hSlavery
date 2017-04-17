@@ -1,4 +1,4 @@
-### How My 40 Hours A Week Were Spent and Rewarded for The Modern Slavery
+### How a 40 Hours Week was Spent and Rewarded for the Modern Slavery
 
 #### Tools
 
