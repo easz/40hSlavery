@@ -1,5 +1,5 @@
 {
-  "commit_info_csv" : "", 
+  "commit_info_csv" : "example/p4metrics.csv", 
   "commit_files_json" : "example/video-game-sales-data.json",
-  "monetary_csv" : ""
+  "monetary_csv" : "example/monetary.csv"
 }
