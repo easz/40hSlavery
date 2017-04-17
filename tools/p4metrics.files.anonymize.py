@@ -23,7 +23,7 @@ in_json = open(IN_JSON, 'r')
 DATA = json.load(in_json)
 in_json.close()
 
-data_trnaslated = {}
+data_annoymized = {}
 
 dirs = {}
 dir_translate = {}
@@ -56,8 +56,8 @@ for key, value in DATA.items():
   path_items_translated.append(files_translate[file_name])
 
   key_new = "//%s" % ('/'.join(path_items_translated))
-  data_trnaslated[key_new] = value
+  data_annoymized[key_new] = value
 
 out_json = open(OUT_JSON, 'w')
-out_json.write(json.dumps(data_trnaslated, indent=0, sort_keys=True))
+out_json.write(json.dumps(data_annoymized, indent=0, sort_keys=True))
 out_json.close()
