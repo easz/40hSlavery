@@ -1,5 +1,7 @@
 ### How a 40 Hours Week was Spent and Rewarded for the Modern Slavery
 
+[Demo](https://easz.github.io/40hSlavery/charts/)
+
 #### Tools
 
  - **perforce_commit_metrics.py**
