@@ -163,7 +163,7 @@ for p4change in stdout_p4changes.split('\n'):
 			print CHANGELIST_NR
 
 # OUTPUT: dump commit files into file
-out_json.write(json.dumps(commit_files))
+out_json.write(json.dumps(commit_files, indent=0, sort_keys=True))
 
 # close files
 out_csv.close()
