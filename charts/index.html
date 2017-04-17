@@ -38,16 +38,14 @@
     <svg id='legend' width="500"></svg>
 
     <!-- libs -->
-    <script src="lib/d3.v4.8.0.min.js"></script>
+    <script src="lib/d3.v4.8.0.js"></script>
 
     <script>
 
-    // Adaption from https://codepen.io/freeCodeCamp/pen/KaNGNR
+      // Adaption from https://codepen.io/freeCodeCamp/pen/KaNGNR
 
-      // Define body
       var body = d3.select("body");
         
-      // Define the div for the tooltip
       var tooltip = body.append("div")
         .attr("class", "tooltip")
         .attr("id", "tooltip")
@@ -65,17 +63,46 @@
           .size([width, height])
           .paddingInner(1);
 
-      var generate_treemap = function(file) {
-        d3.json(file, function(error,data){
+      var generate_commit_files_treemap = function(file) {
+
+        d3.json(file, function(error, data){
           
           if (error) throw error;
           
-          var root = d3.hierarchy(data)
-              .eachBefore(function(d) {
-                d.data.id = (d.parent ? d.parent.data.id + "." : "") + d.data.name; 
-              })
-              .sum(sumBySize)
-              .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
+          // options
+          var MAX_DEPTH = 7;
+          //// data conversion
+          var data_array_of_map = [];
+          // append ROOT ahead and add all possible intermediate dirs
+          var intermediate_dirs = {};
+          for (var path in data) {
+            var path_rooted = "ROOT" + path.substr(1);           // //d1/d2/f1.txt -> ROOT/d1/d2/f1.txt
+            var depth = 0;
+            var idx;
+            while ((idx = path_rooted.firstIndexOf("/")) > 0)  {
+              intermediate_dirs[path_rooted.substr(0, idx)] = 0;
+              path_rooted = path_rooted.substr(idx+1);
+              depth += 1;
+              if (depth > MAX_DEPTH) break;
+            }
+            var item = {};
+            // TODO
+          }
+          for (var dir in intermediate_dirs) {
+            var item = {};
+            item.id = dir;             // intermediate path
+            item.value = 0;             // 0
+            data_array_of_map.push(item);
+          }
+          
+
+          var stratify = d3.stratify()
+                           .id(function(d) { return d.id; })
+                           .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf("/")); });
+
+          var root = stratify(data_array_of_map)
+                     .sum(function(d) { return d.value; })
+                     .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
 
           treemap(root);
 
@@ -180,7 +207,7 @@
       d3.json("config.json", function(error, data) {
         if (error) throw error;
 
-        generate_treemap(data.commit_files_json);
+        generate_commit_files_treemap(data.commit_files_json);
         
       });
 
