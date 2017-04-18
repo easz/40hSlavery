@@ -10,9 +10,18 @@
       }
 
       h1 {
-        font: 23px;
+        font-size: 23px;
         text-align: center;
       }
+      h2 {
+        font-size: 20px;
+        text-align: center;
+      }
+      h3 {
+        font-size: 18px;
+        text-align: center;
+      }
+
       svg {
         font: 10px sans-serif;
         text-align: center;
@@ -20,7 +29,7 @@
         margin: auto;
       }
 
-      div.tooltip {
+      div.tooltip-treemap {
         position: absolute;
         padding: 10px;
         font: 12px Arial;
@@ -31,7 +40,7 @@
         pointer-events: none;
       }
 
-      #legend{
+      #legend-treemap-commit-files {
         font-size: 15px;
         text-align: center;
         display: block;
@@ -40,13 +49,23 @@
         margin-bottom: 2rem;
         margin-top: 1rem;
       }
+
+      #info {
+        text-align: center;
+      }
+
     </style>
   </head>
   <body>
     <h1>Report</h1>
+    <!-- info -->
+    <div id="info"></div>
+    <hr>
     <!-- chart containers -->
-    <svg id='tree-map-commit-files' width="960" height="570"></svg>
-    <svg id='legend-tree-map-commit-files' width="500"></svg>
+    <h3>Summary of Perforce Commits</h3>
+    <svg id='treemap-commit-files' width="1024" height="768"></svg>
+    <svg id='legend-treemap-commit-files' width="500"></svg>
+    <hr>
 
     <!-- libs -->
     <script src="lib/d3.v4.8.0.js"></script>
@@ -64,11 +83,11 @@
           var body = d3.select("body");
 
           var tooltip = body.append("div")
-                            .attr("class", "tooltip")
-                            .attr("id", "tooltip")
+                            .attr("class", "tooltip-treemap")
+                            .attr("id", "tooltip-treemap")
                             .style("opacity", 0);
 
-          var svg   = d3.select("#tree-map-commit-files"),
+          var svg   = d3.select("#treemap-commit-files"),
               width  = +svg.attr("width"),
               height = +svg.attr("height");
 
@@ -195,7 +214,7 @@
           categories = categories.filter(function(category, index, self){
             return self.indexOf(category)===index;
           })
-          var legend = d3.select("#legend-tree-map-commit-files")
+          var legend = d3.select("#legend-treemap-commit-files")
           var legendWidth = +legend.attr("width");
           const LEGEND_OFFSET = 10;
           const LEGEND_RECT_SIZE = 15;
@@ -234,22 +253,30 @@
       // end - generate_commit_files_treemap
 
       // generate all charts
-      var generate_charts = function(data) {
-        generate_commit_files_treemap(data.commit_files_json, data.options.commit_file_treemap);
+      var generate_charts = function(config) {
+        // info
+        var info = d3.select("#info");
+        info.append("img")
+            .attr("src", config.info.gender.match(/^m/) ? "img/head_m.jpg" : "img/head_f.jpg");
+        info.append("h2")
+            .text(config.info.name);
+        // charts
+        generate_commit_files_treemap(config.commit_files_json, config.options.commit_file_treemap);
       };
 
       // __MAIN__
+
       // load private config
-      d3.json("private.config.json", function(error, data) {
+      d3.json("private.config.json", function(error, config) {
         if (error) {
           // or load public config
-          d3.json("config.json", function(error, data) {
+          d3.json("config.json", function(error, config) {
             if (error) throw error;
-            generate_charts(data);
+            generate_charts(config);
           });
         }
         else {
-          generate_charts(data);
+          generate_charts(config);
         }
       });
 
