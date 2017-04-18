@@ -54,7 +54,7 @@
           width = +svg.attr("width"),
           height = +svg.attr("height");
 
-      var fader = function(color) { return d3.interpolateRgb(color, "#fff")(0.2); },
+      var fader = function(color) { return d3.interpolateRgb(color, "#ffffff")(.2); },
           color = d3.scaleOrdinal(d3.schemeCategory20.map(fader)),
           format = d3.format(",d");
 
@@ -115,12 +115,14 @@
           var stratify = d3.stratify()
                            .id(function(d) { return d.id; })
                            .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf("/")); });
+          var sum_scale = function(d) { return d.value === 0 ? 0 : Math.pow(d.value, 0.95); };
           var root = stratify(data_treemp)
-                     .sum(function(d) { return d.value; })
-                     .sort(function(a, b) { return (b.height - a.height ||
-                                                    b.value - a.value   ||
+                     .sum(sum_scale)
+                     .sort(function(a, b) { return (b.value - a.value   ||
+                                                    b.height - a.height ||
                                                     a.data.category.localeCompare(b.data.category)) ||
-                                                    a.id.localeCompare(b.id) ;} );
+                                                    a.id.localeCompare(b.id) ||
+                                                    0;} );
           treemap(root);
           ///
 
