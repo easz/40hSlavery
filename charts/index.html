@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
+  <!-- Code adapted from https://codepen.io/freeCodeCamp/pen/KaNGNR -->
   <head>
-    <meta charset="UTF-8"> 
+    <meta charset="UTF-8">
     <style>
       svg {
         font: 10px sans-serif;
@@ -12,13 +13,13 @@
 
       div.tooltip {
         position: absolute;
-        padding: 10px;                
-        font: 12px Arial;        
+        padding: 10px;
+        font: 12px Arial;
         background: rgba(255, 255, 204, 0.95);
         box-shadow: 1px 1px 10px rgba(128, 128, 128, 0.6);
-        border: 0px;        
-        border-radius: 2px;            
-        pointer-events: none; 
+        border: 0px;
+        border-radius: 2px;
+        pointer-events: none;
       }
 
       #legend{
@@ -34,24 +35,22 @@
   </head>
   <body>
     <!-- chart containers -->
-    <svg id='tree-map' width="960" height="570"></svg>
-    <svg id='legend' width="500"></svg>
+    <svg id='tree-map-commit-files' width="960" height="570"></svg>
+    <svg id='legend-tree-map-commit-files' width="500"></svg>
 
     <!-- libs -->
     <script src="lib/d3.v4.8.0.js"></script>
 
     <script>
 
-      // Adaption from https://codepen.io/freeCodeCamp/pen/KaNGNR
-
       var body = d3.select("body");
-        
+
       var tooltip = body.append("div")
         .attr("class", "tooltip")
         .attr("id", "tooltip")
         .style("opacity", 0);
 
-      var svg = d3.select("#tree-map"),
+      var svg = d3.select("#tree-map-commit-files"),
           width = +svg.attr("width"),
           height = +svg.attr("height");
 
@@ -63,64 +62,68 @@
           .size([width, height])
           .paddingInner(1);
 
+      // generate treemap for commit files counts
       var generate_commit_files_treemap = function(file, options={}) {
 
+        // load data
         d3.json(file, function(error, data){
-          
+
           if (error) throw error;
-          
-          // options
-          const MAX_DEPTH = (options.max_depth === undefined) ? 7 : options.max_depth;
-          //// data conversion
-          var data_treemp = [];
-          // append 'ROOT' ahead and add all possible intermediate dirs
-          var data_filtered = {};
-          for (const path in data) {                       // original cimmit path.  "//d1/d2/f1.txt" : [4, 3, 2]
-            const path_rooted = "ROOT" + path.substr(1);   // //d1/d2/f1.txt -> ROOT/d1/d2/f1.txt (depth: 0/1/2/3)
+
+          //// perform data conversion
+          const MAX_DEPTH = (options.max_depth === undefined) ? 7 : options.max_depth; // max depth to show
+          // append 'ROOT' ahead, filter out larger depth, and add all possible intermediate dirs
+          var data_filtered = {};                          // filtered result       { "ROOT/d1/d2/f1.txt" : 10, "ROOT" : 0, "ROOT/d1" : 0, "ROOT/d1/d2" : 0 }
+          for (const path in data) {                       // original commit path  {"//d1/d2/f1.txt" : [4, 3, 2]}
+            const path_rooted = "ROOT" + path.substr(1);     // append ROOT ahead "//d1/d2/f1.txt"" -> "ROOT/d1/d2/f1.txt" (depth: 0/1/2/3)
             const path_split = path_rooted.split("/");
             const depth_to_process = (path_split.length > MAX_DEPTH ? MAX_DEPTH : path_split.length);
             var idx;
-            for (idx=0; idx < depth_to_process; idx++) {
-              const intermediate_dir = path_split.slice(0, idx+1).join("/"); // intermediate dir
+            for (idx = 0; idx < depth_to_process; idx++) {
+              const intermediate_dir = path_split.slice(0, idx+1).join("/"); // extract all intermediate dirs
               if (!(intermediate_dir in data_filtered)) {
                 data_filtered[ intermediate_dir ] = 0;
               }
             }
-            const end_node = path_split.slice(0, idx+1).join("/");           // end node
+            const end_node = path_split.slice(0, idx+1).join("/");           // end node (i.e. MAX_DEPTH)
             if (!(end_node in data_filtered)) {
                 data_filtered[ end_node ] = 0;
             }
             data_filtered[ end_node ] += data[path].length;                  // number of affected revisions
           }
+          // construct treemap data
+          var data_treemp = [];                     // conversion result     [ {"id":"ROOT/d1/d2/f1.txt", "value":10, "name":"//d1/d2/f1.txt"}, ... ]
           for (const node in data_filtered) {
             var item = {};
-            item.id = node;                   
-            item.value = data_filtered[node];
-            item.name = "/" + node.substr(4); //  ROOT/d1/d2/f1.txt -> //d1/d2/f1.txt
-            item.category = "D0";             // category
-            for (const pattern in options.category) {
-              const re = new RegExp(pattern);
-              if (item.name.match(re)) {
-                item.category = options.category[pattern];
+            item.id       = node;
+            item.value    = data_filtered[node];
+            item.name     = "/" + node.substr(4);    // get back the original path: ROOT/d1/d2/f1.txt -> //d1/d2/f1.txt
+            item.category = "Undefined";             // category
+            for (const i in options.category) {
+              for (const pattern in options.category[i]) {
+                const re = new RegExp(pattern);
+                if (item.name.match(re)) {
+                  item.category = options.category[i][pattern];
+                }
               }
             }
             data_treemp.push(item);
           }
           //// end - data conversion
 
+          /// create data and run d3.treemap
           var stratify = d3.stratify()
                            .id(function(d) { return d.id; })
                            .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf("/")); });
-
           var root = stratify(data_treemp)
                      .sum(function(d) { return d.value; })
-                     .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
-
+                     .sort(function(a, b) { return b.height - a.height || b.value - a.value || a.id.localeCompare(b.id); });
           treemap(root);
+          ///
 
           var cell = svg.selectAll("g")
-            .data(root.leaves())
-            .enter().append("g")
+              .data(root.leaves())
+              .enter().append("g")
               .attr("class", "group")
               .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
 
@@ -138,23 +141,22 @@
               .attr("data-value", function(d){
                 return d.data.value;
               })
-              .attr("fill", function(d) { 
-                return color(d.data.category); 
+              .attr("fill", function(d) {
+                return color(d.data.category);
               })
-              .on("mousemove", function(d) {  
-                console.log("mouseover");    
-                tooltip.style("opacity", .9); 
+              .on("mousemove", function(d) {
+                tooltip.style("opacity", .9);
                 tooltip.html(
-                  '' + d.data.name + 
-                  '<br>Category: ' + d.data.category + 
+                  '' + d.data.name +
+                  '<br>Category: ' + d.data.category +
                   '<br>File Commits: ' + d.data.value
                 )
                 .attr("data-value", d.data.value)
-                .style("left", (d3.event.pageX + 10) + "px") 
-                .style("top", (d3.event.pageY - 28) + "px"); 
-              })    
-              .on("mouseout", function(d) { 
-                tooltip.style("opacity", 0); 
+                .style("left", (d3.event.pageX + 10) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+              })
+              .on("mouseout", function(d) {
+                tooltip.style("opacity", 0);
               })
 
           cell.append("text")
@@ -167,14 +169,14 @@
             .text(function(d) { return d; });
 
 
-              
+
           var categories = root.leaves().map(function(nodes){
             return nodes.data.category;
           });
           categories = categories.filter(function(category, index, self){
-            return self.indexOf(category)===index;    
+            return self.indexOf(category)===index;
           })
-          var legend = d3.select("#legend")
+          var legend = d3.select("#legend-tree-map-commit-files")
           var legendWidth = +legend.attr("width");
           const LEGEND_OFFSET = 10;
           const LEGEND_RECT_SIZE = 15;
@@ -183,44 +185,51 @@
           const LEGEND_TEXT_X_OFFSET = 3;
           const LEGEND_TEXT_Y_OFFSET = -2;
           var legendElemsPerRow = Math.floor(legendWidth/LEGEND_H_SPACING);
-          
+
           var legendElem = legend
             .append("g")
             .attr("transform", "translate(60," + LEGEND_OFFSET + ")")
             .selectAll("g")
             .data(categories)
             .enter().append("g")
-            .attr("transform", function(d, i) { 
-              return 'translate(' + 
-              ((i%legendElemsPerRow)*LEGEND_H_SPACING) + ',' + 
+            .attr("transform", function(d, i) {
+              return 'translate(' +
+              ((i%legendElemsPerRow)*LEGEND_H_SPACING) + ',' +
               ((Math.floor(i/legendElemsPerRow))*LEGEND_RECT_SIZE + (LEGEND_V_SPACING*(Math.floor(i/legendElemsPerRow)))) + ')';
             })
-            
-          legendElem.append("rect")                              
-            .attr('width', LEGEND_RECT_SIZE)                          
-            .attr('height', LEGEND_RECT_SIZE)     
-            .attr('class','legend-item')                 
+
+          legendElem.append("rect")
+            .attr('width', LEGEND_RECT_SIZE)
+            .attr('height', LEGEND_RECT_SIZE)
+            .attr('class','legend-item')
             .attr('fill', function(d){
               return color(d);
             })
-            
-          legendElem.append("text")                              
-            .attr('x', LEGEND_RECT_SIZE + LEGEND_TEXT_X_OFFSET)                          
-            .attr('y', LEGEND_RECT_SIZE + LEGEND_TEXT_Y_OFFSET)                       
-            .text(function(d) { return d; });  
+
+          legendElem.append("text")
+            .attr('x', LEGEND_RECT_SIZE + LEGEND_TEXT_X_OFFSET)
+            .attr('y', LEGEND_RECT_SIZE + LEGEND_TEXT_Y_OFFSET)
+            .text(function(d) { return d; });
         });
       };
 
-      function sumBySize(d) {
-        return d.value;
-      }
-
-
-      d3.json("config.json", function(error, data) {
-        if (error) throw error;
-
+      // generate all charts
+      var generate_charts = function(data) {
         generate_commit_files_treemap(data.commit_files_json, data.options.commit_file_treemap);
-        
+      };
+
+      // load private config
+      d3.json("private.config.json", function(error, data) {
+        if (error) {
+          // or load public config
+          d3.json("config.json", function(error, data) {
+            if (error) throw error;
+            generate_charts(data);
+          });
+        }
+        else {
+          generate_charts(data);
+        }
       });
 
     </script>
