@@ -29,14 +29,14 @@
         margin: auto;
       }
 
-      div.tooltip-treemap {
+      div.tooltip {
         position: absolute;
         padding: 10px;
         font: 12px Arial;
         background: rgba(255, 255, 204, 0.95);
         box-shadow: 1px 1px 10px rgba(128, 128, 128, 0.6);
         border: 0px;
-        border-radius: 2px;
+        border-radius: 8px;
         pointer-events: none;
       }
 
@@ -66,6 +66,12 @@
     <svg id='treemap-commit-files' width="1024" height="768"></svg>
     <svg id='legend-treemap-commit-files' width="500"></svg>
     <hr>
+    <h3>Timeline of Perforce Commits</h3>
+    <hr>
+    <h3>Reward</h3>
+    <!-- http://bl.ocks.org/juan-cb/43f10523858abf6053ae -->
+    <hr>
+    
 
     <!-- libs -->
     <script src="lib/d3.v4.8.0.js"></script>
@@ -83,8 +89,7 @@
           var body = d3.select("body");
 
           var tooltip = body.append("div")
-                            .attr("class", "tooltip-treemap")
-                            .attr("id", "tooltip-treemap")
+                            .attr("class", "tooltip")
                             .style("opacity", 0);
 
           var svg   = d3.select("#treemap-commit-files"),
