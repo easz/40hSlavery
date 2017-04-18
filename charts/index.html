@@ -117,7 +117,10 @@
                            .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf("/")); });
           var root = stratify(data_treemp)
                      .sum(function(d) { return d.value; })
-                     .sort(function(a, b) { return b.height - a.height || b.value - a.value || a.id.localeCompare(b.id); });
+                     .sort(function(a, b) { return (b.height - a.height ||
+                                                    b.value - a.value   ||
+                                                    a.data.category.localeCompare(b.data.category)) ||
+                                                    a.id.localeCompare(b.id) ;} );
           treemap(root);
           ///
 
