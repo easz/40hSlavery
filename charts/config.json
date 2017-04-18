@@ -7,7 +7,14 @@
   {
     "commit_file_treemap" :
     {
-      "max_depth" : 7
+      "max_depth" : 7,
+      "category" : {
+        "//d0/d1/d3" : "D3",
+        "//d0/d1/d2" : "D2",
+        "//d0/d1/d1" : "D1",
+        "//d0/d33" : "D33",
+        "//d0/d12" : "D12"
+      }
     }
   }
 }

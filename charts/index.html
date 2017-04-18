@@ -96,6 +96,14 @@
             var item = {};
             item.id = node;                   
             item.value = data_filtered[node];
+            item.name = "/" + node.substr(4); //  ROOT/d1/d2/f1.txt -> //d1/d2/f1.txt
+            item.category = "D0";             // category
+            for (const pattern in options.category) {
+              const re = new RegExp(pattern);
+              if (item.name.match(re)) {
+                item.category = options.category[pattern];
+              }
+            }
             data_treemp.push(item);
           }
           //// end - data conversion
@@ -137,9 +145,9 @@
                 console.log("mouseover");    
                 tooltip.style("opacity", .9); 
                 tooltip.html(
-                  'Name: ' + d.data.name + 
+                  '' + d.data.name + 
                   '<br>Category: ' + d.data.category + 
-                  '<br>Value: ' + d.data.value
+                  '<br>File Commits: ' + d.data.value
                 )
                 .attr("data-value", d.data.value)
                 .style("left", (d3.event.pageX + 10) + "px") 
