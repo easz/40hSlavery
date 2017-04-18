@@ -1,5 +1,13 @@
 {
   "commit_info_csv" : "example/p4metrics.csv", 
   "commit_files_json" : "example/p4metrics.files.json",
-  "monetary_csv" : "example/monetary.csv"
+  "monetary_csv" : "example/monetary.csv",
+
+  "options" : 
+  {
+    "commit_file_treemap" :
+    {
+      "max_depth" : 7
+    }
+  }
 }

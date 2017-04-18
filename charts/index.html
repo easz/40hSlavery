@@ -63,44 +63,48 @@
           .size([width, height])
           .paddingInner(1);
 
-      var generate_commit_files_treemap = function(file) {
+      var generate_commit_files_treemap = function(file, options={}) {
 
         d3.json(file, function(error, data){
           
           if (error) throw error;
           
           // options
-          var MAX_DEPTH = 7;
+          const MAX_DEPTH = (options.max_depth === undefined) ? 7 : options.max_depth;
           //// data conversion
-          var data_array_of_map = [];
-          // append ROOT ahead and add all possible intermediate dirs
-          var intermediate_dirs = {};
-          for (var path in data) {
-            var path_rooted = "ROOT" + path.substr(1);           // //d1/d2/f1.txt -> ROOT/d1/d2/f1.txt
-            var depth = 0;
+          var data_treemp = [];
+          // append 'ROOT' ahead and add all possible intermediate dirs
+          var data_filtered = {};
+          for (const path in data) {                       // original cimmit path.  "//d1/d2/f1.txt" : [4, 3, 2]
+            const path_rooted = "ROOT" + path.substr(1);   // //d1/d2/f1.txt -> ROOT/d1/d2/f1.txt (depth: 0/1/2/3)
+            const path_split = path_rooted.split("/");
+            const depth_to_process = (path_split.length > MAX_DEPTH ? MAX_DEPTH : path_split.length);
             var idx;
-            while ((idx = path_rooted.firstIndexOf("/")) > 0)  {
-              intermediate_dirs[path_rooted.substr(0, idx)] = 0;
-              path_rooted = path_rooted.substr(idx+1);
-              depth += 1;
-              if (depth > MAX_DEPTH) break;
+            for (idx=0; idx < depth_to_process; idx++) {
+              const intermediate_dir = path_split.slice(0, idx+1).join("/"); // intermediate dir
+              if (!(intermediate_dir in data_filtered)) {
+                data_filtered[ intermediate_dir ] = 0;
+              }
             }
-            var item = {};
-            // TODO
+            const end_node = path_split.slice(0, idx+1).join("/");           // end node
+            if (!(end_node in data_filtered)) {
+                data_filtered[ end_node ] = 0;
+            }
+            data_filtered[ end_node ] += data[path].length;                  // number of affected revisions
           }
-          for (var dir in intermediate_dirs) {
+          for (const node in data_filtered) {
             var item = {};
-            item.id = dir;             // intermediate path
-            item.value = 0;             // 0
-            data_array_of_map.push(item);
+            item.id = node;                   
+            item.value = data_filtered[node];
+            data_treemp.push(item);
           }
-          
+          //// end - data conversion
 
           var stratify = d3.stratify()
                            .id(function(d) { return d.id; })
                            .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf("/")); });
 
-          var root = stratify(data_array_of_map)
+          var root = stratify(data_treemp)
                      .sum(function(d) { return d.value; })
                      .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
 
@@ -207,7 +211,7 @@
       d3.json("config.json", function(error, data) {
         if (error) throw error;
 
-        generate_commit_files_treemap(data.commit_files_json);
+        generate_commit_files_treemap(data.commit_files_json, data.options.commit_file_treemap);
         
       });
 
