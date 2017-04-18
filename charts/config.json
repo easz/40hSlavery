@@ -17,10 +17,11 @@
       "min_count" : 3,
       "pow_scale_count" : 1,
       "category" : [
+        { "//d0/" : "Proj X" },
         { "//d0/d1/d14" : "Proj Telska" },
         { "//d0/d1/d2"  : "Proj Dev" },
         { "//d0/d1/d3"  : "PRoj XXL" },
-        { "//d0/d1/d14/d3/d4/d68/"  : "PRoj Eva" },
+        { "//d0/d1/d14/d3/d4/d68/"  : "Proj Eva" },
         { "//d0/d1/d14/d3/d4/d44/"  : "Proj Hoogle"},
         { "//d0/d1/d14/d3/d4/d12/"  : "Proj Ole"},
         { "//d0/d1/d138/"           : "Documentation"},
