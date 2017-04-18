@@ -8,6 +8,8 @@
     "commit_file_treemap" :
     {
       "max_depth" : 7,
+      "min_count" : 2,
+      "pow_scale_count" : 1,
       "category" : [
         { "//d0/"       : "D0" },
         { "//d0/d1"     : "D01" },

@@ -4,6 +4,15 @@
   <head>
     <meta charset="UTF-8">
     <style>
+      html *
+      {
+        font-family: sans-serif;
+      }
+
+      h1 {
+        font: 23px;
+        text-align: center;
+      }
       svg {
         font: 10px sans-serif;
         text-align: center;
@@ -34,6 +43,7 @@
     </style>
   </head>
   <body>
+    <h1>Report</h1>
     <!-- chart containers -->
     <svg id='tree-map-commit-files' width="960" height="570"></svg>
     <svg id='legend-tree-map-commit-files' width="500"></svg>
@@ -43,25 +53,6 @@
 
     <script>
 
-      var body = d3.select("body");
-
-      var tooltip = body.append("div")
-        .attr("class", "tooltip")
-        .attr("id", "tooltip")
-        .style("opacity", 0);
-
-      var svg = d3.select("#tree-map-commit-files"),
-          width = +svg.attr("width"),
-          height = +svg.attr("height");
-
-      var fader = function(color) { return d3.interpolateRgb(color, "#ffffff")(.2); },
-          color = d3.scaleOrdinal(d3.schemeCategory20.map(fader)),
-          format = d3.format(",d");
-
-      var treemap = d3.treemap()
-          .size([width, height])
-          .paddingInner(1);
-
       // generate treemap for commit files counts
       var generate_commit_files_treemap = function(file, options={}) {
 
@@ -70,12 +61,37 @@
 
           if (error) throw error;
 
-          //// perform data conversion
+          var body = d3.select("body");
+
+          var tooltip = body.append("div")
+                            .attr("class", "tooltip")
+                            .attr("id", "tooltip")
+                            .style("opacity", 0);
+
+          var svg   = d3.select("#tree-map-commit-files"),
+              width  = +svg.attr("width"),
+              height = +svg.attr("height");
+
+          var fader  = function(color) { return d3.interpolateRgb(color, "#ffffff")(.2); },
+              color  = d3.scaleOrdinal(d3.schemeCategory20.map(fader)),
+              format = d3.format(",d");
+
+          var treemap = d3.treemap()
+                          .size([width, height])
+                          .paddingInner(1);
+
+          // options
+          const POW_SCALE_COUNT = (options.pow_scale_count === undefined) ? 1 : options.pow_scale_count; // pow scale for data count
           const MAX_DEPTH = (options.max_depth === undefined) ? 7 : options.max_depth; // max depth to show
+          const MIN_COUNT = (options.min_count === undefined) ? 2 : options.min_count; // min count to filter out
+
+          //// perform data conversion
           // append 'ROOT' ahead, filter out larger depth, and add all possible intermediate dirs
           var data_filtered = {};                          // filtered result       { "ROOT/d1/d2/f1.txt" : 10, "ROOT" : 0, "ROOT/d1" : 0, "ROOT/d1/d2" : 0 }
           for (const path in data) {                       // original commit path  {"//d1/d2/f1.txt" : [4, 3, 2]}
-            const path_rooted = "ROOT" + path.substr(1);     // append ROOT ahead "//d1/d2/f1.txt"" -> "ROOT/d1/d2/f1.txt" (depth: 0/1/2/3)
+            const commit_count = data[path].length;
+            if (commit_count < MIN_COUNT) { continue; }    // ignore file with few comits
+            const path_rooted = "ROOT" + path.substr(1);   // append ROOT ahead "//d1/d2/f1.txt"" -> "ROOT/d1/d2/f1.txt" (depth: 0/1/2/3)
             const path_split = path_rooted.split("/");
             const depth_to_process = (path_split.length > MAX_DEPTH ? MAX_DEPTH : path_split.length);
             var idx;
@@ -89,7 +105,7 @@
             if (!(end_node in data_filtered)) {
                 data_filtered[ end_node ] = 0;
             }
-            data_filtered[ end_node ] += data[path].length;                  // number of affected revisions
+            data_filtered[ end_node ] += commit_count;                  // number of affected revisions
           }
           // construct treemap data
           var data_treemp = [];                     // conversion result     [ {"id":"ROOT/d1/d2/f1.txt", "value":10, "name":"//d1/d2/f1.txt"}, ... ]
@@ -115,7 +131,7 @@
           var stratify = d3.stratify()
                            .id(function(d) { return d.id; })
                            .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf("/")); });
-          var sum_scale = function(d) { return d.value === 0 ? 0 : Math.pow(d.value, 0.95); };
+          var sum_scale = function(d) { return d.value === 0 ? 0 : Math.pow(d.value, POW_SCALE_COUNT); };
           var root = stratify(data_treemp)
                      .sum(sum_scale)
                      .sort(function(a, b) { return (b.value - a.value   ||
@@ -173,8 +189,6 @@
             .attr("y", function(d, i) { return 13 + i * 10; })
             .text(function(d) { return d; });
 
-
-
           var categories = root.leaves().map(function(nodes){
             return nodes.data.category;
           });
@@ -217,12 +231,14 @@
             .text(function(d) { return d; });
         });
       };
+      // end - generate_commit_files_treemap
 
       // generate all charts
       var generate_charts = function(data) {
         generate_commit_files_treemap(data.commit_files_json, data.options.commit_file_treemap);
       };
 
+      // __MAIN__
       // load private config
       d3.json("private.config.json", function(error, data) {
         if (error) {
