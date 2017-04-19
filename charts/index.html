@@ -1,6 +1,10 @@
 <!DOCTYPE html>
+<!-- 
+    Code adapted from various resource
+     - https://codepen.io/freeCodeCamp/pen/KaNGNR 
+     - http://bl.ocks.org/juan-cb/43f10523858abf6053ae
+-->
 <html>
-  <!-- Code adapted from https://codepen.io/freeCodeCamp/pen/KaNGNR -->
   <head>
     <meta charset="UTF-8">
     <style>
@@ -22,11 +26,8 @@
         text-align: center;
       }
 
-      svg {
-        font: 10px sans-serif;
+      #info {
         text-align: center;
-        display: block;
-        margin: auto;
       }
 
       div.tooltip {
@@ -40,6 +41,13 @@
         pointer-events: none;
       }
 
+      svg {
+        font: 10px sans-serif;
+        text-align: center;
+        display: block;
+        margin: auto;
+      }
+
       #legend-treemap-commit-files {
         font-size: 15px;
         text-align: center;
@@ -48,10 +56,6 @@
         padding-bottom: 5px;
         margin-bottom: 2rem;
         margin-top: 1rem;
-      }
-
-      #info {
-        text-align: center;
       }
 
     </style>
@@ -266,12 +270,12 @@
         info.append("h2")
             .text(config.info.name);
         // charts
-        generate_commit_files_treemap(config.commit_files_json, config.options.commit_file_treemap);
+        generate_commit_files_treemap(config.data.commit_files_json, config.options.commit_file_treemap);
       };
 
       // __MAIN__
 
-      // load private config
+      // load private config if possible
       d3.json("private.config.json", function(error, config) {
         if (error) {
           // or load public config

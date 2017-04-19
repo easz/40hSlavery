@@ -1,7 +1,10 @@
 {
-  "commit_info_csv" : "example/p4metrics.csv",
-  "commit_files_json" : "example/p4metrics.files.json",
-  "monetary_csv" : "example/monetary.csv",
+  "data" :
+  {
+    "commit_info_csv"   : "example/p4metrics.csv",
+    "commit_files_json" : "example/p4metrics.files.json",
+    "monetary_csv"      : "example/monetary.csv"
+  },
 
   "info" :
   {
@@ -13,14 +16,14 @@
   {
     "commit_file_treemap" :
     {
-      "max_depth" : 10,
-      "min_count" : 3,
+      "max_depth"       : 10,
+      "min_count"       : 3,
       "pow_scale_count" : 1,
       "category" : [
-        { "//d0/" : "Proj X" },
-        { "//d0/d1/d14" : "Proj Telska" },
-        { "//d0/d1/d2"  : "Proj Dev" },
-        { "//d0/d1/d3"  : "PRoj XXL" },
+        { "//d0/"                   : "Proj X" },
+        { "//d0/d1/d14"             : "Proj Telska" },
+        { "//d0/d1/d2"              : "Proj Dev" },
+        { "//d0/d1/d3"              : "PRoj XXL" },
         { "//d0/d1/d14/d3/d4/d68/"  : "Proj Eva" },
         { "//d0/d1/d14/d3/d4/d44/"  : "Proj Hoogle"},
         { "//d0/d1/d14/d3/d4/d12/"  : "Proj Ole"},
