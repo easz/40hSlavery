@@ -27,7 +27,8 @@
       }
 
       img.icon {
-        width: 50px;
+        width: 64px;
+        text-align:center;
       }
 
       #info {
@@ -37,7 +38,7 @@
       div.tooltip {
         position: absolute;
         padding: 10px;
-        font: 12px Arial;
+        font-size: 12px;
         background: rgba(255, 255, 204, 0.95);
         box-shadow: 1px 1px 10px rgba(128, 128, 128, 0.6);
         border: 0px;
@@ -66,19 +67,23 @@
   </head>
   <body>
     <!-- info -->
+    <p style="text-align:center"><img id="info_icon" class="icon" src=""></p>
     <div id="info"></div>
     <hr>
     <!-- chart containers -->
+    <p style="text-align:center"><img class="icon" src="img/map.png"></p>
     <h3>Timeline of Perforce Commits</h3>
     <hr>
 
+    <p style="text-align:center"><img class="icon" src="img/tome.png"></p>
     <h3>Summary of Perforce Commits</h3>
-      <svg id='treemap-commit-files' width="1024" height="768"></svg>
-      <svg id='legend-treemap-commit-files' width="500"></svg>
+    <svg id='treemap-commit-files' width="1024" height="768"></svg>
+    <svg id='legend-treemap-commit-files' width="500"></svg>
     <hr>
 
+    <p style="text-align:center"><img class="icon" src="img/coin.png"></p>
     <h3>Reward</h3>
-      <svg id='stackedbar-reward' width="800" height="600"></svg>
+    <svg id='stackedbar-reward' width="800" height="600"></svg>
     <hr>
     <!--  -->
 
@@ -267,11 +272,10 @@
 
       // generate all charts
       var generate_charts = function(config) {
+        // info icon
+        d3.select("#info_icon").attr("src", config.info.gender.match(/^m/) ? "img/head_m.jpg" : "img/head_f.jpg");
         // info
         var info = d3.select("#info");
-        info.append("img")
-            .attr("class", "icon")
-            .attr("src", config.info.gender.match(/^m/) ? "img/head_m.jpg" : "img/head_f.jpg");
         info.append("h2")
             .text(config.info.name);
         // charts
