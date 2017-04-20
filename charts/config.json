@@ -19,6 +19,7 @@
       "max_depth"       : 10,
       "min_count"       : 3,
       "pow_scale_count" : 1,
+      "show_text"       : true,
       "category" : [
         { "//d0/"                   : "Proj X" },
         { "//d0/d1/d14"             : "Proj Telska" },

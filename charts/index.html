@@ -124,6 +124,7 @@
           const POW_SCALE_COUNT = (options.pow_scale_count === undefined) ? 1 : options.pow_scale_count; // pow scale for data count
           const MAX_DEPTH = (options.max_depth === undefined) ? 7 : options.max_depth; // max depth to show
           const MIN_COUNT = (options.min_count === undefined) ? 2 : options.min_count; // min count to filter out
+          const SHOW_TEXT = (options.show_text === undefined) ? true : options.show_text; // min count to filter out
 
           //// perform data conversion
           // append 'ROOT' ahead, filter out larger depth, and add all possible intermediate dirs
@@ -185,25 +186,12 @@
           var cell = svg.selectAll("g")
               .data(root.leaves())
               .enter().append("g")
-              //.attr("class", "group")
               .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
 
-          var tile = cell.append("rect")
-              //.attr("id", function(d) { return d.data.id; })
-              //.attr("class", "tile")
+          cell.append("rect")
+              .attr("id", function(d) { return "rect-" + d.id; })
               .attr("width", function(d) { return d.x1 - d.x0; })
               .attr("height", function(d) { return d.y1 - d.y0; })
-              /*
-              .attr("data-name", function(d){
-                return d.data.name;
-              })
-              .attr("data-category", function(d){
-               return d.data.category;
-              })
-              .attr("data-value", function(d){
-                return d.data.value;
-              })
-              */
               .attr("fill", function(d) {
                 return color(d.data.category);
               })
@@ -214,7 +202,6 @@
                   '<br>Category: ' + d.data.category +
                   '<br>File Commits: ' + d.data.value
                 )
-                //.attr("data-value", d.data.value)
                 .style("left", (d3.event.pageX + 10) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
               })
@@ -222,14 +209,23 @@
                 tooltip.style("opacity", 0);
               })
 
+          cell.append("clipPath")
+            .attr("id", function(d) { return "clip-" + d.id; })
+            .append("use")
+            .attr("xlink:href", function(d) { return "#rect-" + d.id + ""; });
+
           cell.append("text")
-            //.attr('class', 'tile-text')
+            .attr("clip-path", function(d) { return "url(#clip-" + d.id + ")"; })
             .selectAll("tspan")
-            .data(function(d) { return d.data.name.split(/(?=[A-Z][^A-Z])/g); })
+            .data(function(d) { 
+              if (SHOW_TEXT) return d.data.name.split(/(?=[A-Z][^A-Z])/g); 
+              else return "";
+            })
             .enter().append("tspan")
             .attr("x", 4)
             .attr("y", function(d, i) { return 13 + i * 10; })
             .text(function(d) { return d; });
+            
 
           var categories = root.leaves().map(function(nodes){
             return nodes.data.category;
