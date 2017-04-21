@@ -184,17 +184,15 @@
           ///
 
           var cell = svg.selectAll("g")
-              .data(root.leaves())
-              .enter().append("g")
-              .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
+                      .data(root.leaves())
+                      .enter().append("g")
+                        .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
 
           cell.append("rect")
               .attr("id", function(d) { return "rect-" + d.id; })
               .attr("width", function(d) { return d.x1 - d.x0; })
               .attr("height", function(d) { return d.y1 - d.y0; })
-              .attr("fill", function(d) {
-                return color(d.data.category);
-              })
+              .attr("fill", function(d) { return color(d.data.category);   })
               .on("mousemove", function(d) {
                 tooltip.style("opacity", .9);
                 tooltip.html(
@@ -215,16 +213,16 @@
             .attr("xlink:href", function(d) { return "#rect-" + d.id + ""; });
 
           cell.append("text")
-            .attr("clip-path", function(d) { return "url(#clip-" + d.id + ")"; })
-            .selectAll("tspan")
-            .data(function(d) { 
-              if (SHOW_TEXT) return d.data.name.split(/(?=[A-Z][^A-Z])/g); 
-              else return "";
-            })
-            .enter().append("tspan")
-            .attr("x", 4)
-            .attr("y", function(d, i) { return 13 + i * 10; })
-            .text(function(d) { return d; });
+                .attr("clip-path", function(d) { return "url(#clip-" + d.id + ")"; })
+              .selectAll("tspan")
+                .data(function(d) { 
+                  if (SHOW_TEXT) return d.data.name.split(/(?=[A-Z][^A-Z])/g); 
+                  else return "";
+                })
+              .enter().append("tspan")
+                .attr("x", 4)
+                .attr("y", function(d, i) { return 13 + i * 10; })
+                .text(function(d) { return d; });
             
 
           var categories = root.leaves().map(function(nodes){
