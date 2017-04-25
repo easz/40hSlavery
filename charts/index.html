@@ -65,7 +65,6 @@
         margin-bottom: 2rem;
         margin-top: 1rem;
       }
-
     </style>
   </head>
   <body>
@@ -188,7 +187,7 @@
                       .enter().append("g")
                         .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
 
-          cell.append("rect")
+          var tile = cell.append("rect")
               .attr("id", function(d) { return "rect-" + d.id; })
               .attr("width", function(d) { return d.x1 - d.x0; })
               .attr("height", function(d) { return d.y1 - d.y0; })
@@ -214,16 +213,13 @@
 
           cell.append("text")
                 .attr("clip-path", function(d) { return "url(#clip-" + d.id + ")"; })
-              .selectAll("tspan")
-                .data(function(d) { 
-                  if (SHOW_TEXT) return d.data.name.split(/(?=[A-Z][^A-Z])/g); 
-                  else return "";
-                })
-              .enter().append("tspan")
+              .append("tspan")
                 .attr("x", 4)
-                .attr("y", function(d, i) { return 13 + i * 10; })
-                .text(function(d) { return d; });
-            
+                .attr("y", 13)
+                .text(function(d) { 
+                  if (SHOW_TEXT) return d.data.name; 
+                  else return "";                
+                });
 
           var categories = root.leaves().map(function(nodes){
             return nodes.data.category;
@@ -256,7 +252,6 @@
           legendElem.append("rect")
             .attr('width', LEGEND_RECT_SIZE)
             .attr('height', LEGEND_RECT_SIZE)
-            .attr('class','legend-item')
             .attr('fill', function(d){
               return color(d);
             })
