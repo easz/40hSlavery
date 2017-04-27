@@ -79,7 +79,6 @@
     <!-- chart - timeline -->
     <p style="text-align:center"><img class="icon" src="img/map.png"></p>
     <h3>Timeline of Perforce Commits</h3>
-    <hr>
     <!-- chart - treemap -->
     <p style="text-align:center"><img class="icon" src="img/tome.png"></p>
     <h3>Summary of Perforce Commits</h3>
@@ -343,7 +342,7 @@
             .data(d3.stack().keys(keys)(data_stack))
             .enter().append("g")
               .attr("fill", function(d) { return z(d.key); })
-              .attr("opacity", 0.7)
+              .attr("opacity", 0.8)
             .selectAll("rect")
             .data(function(d) { return d; })
             .enter().append("rect")
@@ -357,7 +356,7 @@
                   for (const i in keys) {
                     const org = keys[i];
                     if (d.data[org] > 0) {
-                      str += org + ": &euro; "  + d.data[org] + " (" + d.data.Month[org] + " months)" ;
+                      str += org + ': &euro; '  + d.data[org] + ' (' + d.data.Month[org] + ' months) <br>';
                       count++;
                     }
                   }
