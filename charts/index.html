@@ -68,33 +68,34 @@
     </style>
   </head>
   <body>
-    <!-- tooltip -->
+    <!-- tooltip for charts -->
     <div id="tooltip" class="tooltip" style="opacity:0"></div>
 
-    <!-- info -->
+    <!-- info section -->
     <p style="text-align:center"><img id="info_icon" class="icon" src=""></p>
     <div id="info"></div>
     <hr>
-    <!-- chart containers -->
+
+    <!-- chart - timeline -->
     <p style="text-align:center"><img class="icon" src="img/map.png"></p>
     <h3>Timeline of Perforce Commits</h3>
     <hr>
-
+    <!-- chart - treemap -->
     <p style="text-align:center"><img class="icon" src="img/tome.png"></p>
     <h3>Summary of Perforce Commits</h3>
     <svg id='treemap-commit-files' width="1024" height="768"></svg>
     <svg id='legend-treemap-commit-files' width="500"></svg>
     <hr>
-
+    <!-- chart - stacked bar -->
     <p style="text-align:center"><img class="icon" src="img/coin.png"></p>
     <h3>Reward</h3>
     <svg id='stackedbar-reward' width="800" height="600"></svg>
     <hr>
-    <!--  -->
 
-    <!-- libs -->
+    <!-- // -->
+
+    <!-- libs and scripts -->
     <script src="lib/d3.v4.8.0.js"></script>
-
     <script>
 
       // generate treemap for commit files counts
@@ -271,7 +272,7 @@
 
         // create the svg
         var svg = d3.select("#stackedbar-reward"),
-            margin = {top: 20, right: 20, bottom: 30, left: 40},
+            margin = {top: 20, right: 20, bottom: 40, left: 40},
             width = +svg.attr("width") - margin.left - margin.right,
             height = +svg.attr("height") - margin.top - margin.bottom,
             g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
@@ -287,45 +288,91 @@
             .rangeRound([height, 0]);
 
         // set the colors
+        const colors = (options.colors === undefined) ? ["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"] : options.colors;
         var z = d3.scaleOrdinal()
-            .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+            .range(colors);
 
-        // load the csv and create the chart
-        d3.csv("age-groups.csv", function(d, i, columns) {
-          for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
-          d.total = t;
-          
-          return d;
-        }, function(error, data) {
+        d3.csv(file, function(error, data) {
           if (error) throw error;
-          var keys = data.columns.slice(1);
 
-          data.sort(function(a, b) { return b.total - a.total; });
-          x.domain(data.map(function(d) { return d.State; }));
-          y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
+          // reconstruct data
+          var data_filtered = {};  // according to year
+          var org_filtered  = {};  // according to org
+          for (var i = 0; i < data.length; i++) {
+             const yr     = +data[i]["Year"];
+             const months = +data[i]["Month"];
+             const brutto = +data[i]["AnnualBrutto"];
+             const org    =  data[i]["Org"];
+             org_filtered[org] = 1;
+             if (!(yr in data_filtered)) {
+              data_filtered[yr] = {};
+              data_filtered[yr]["Year"] = yr;
+              data_filtered[yr]["Month"] = {};
+              data_filtered[yr]["Month"][org] = months;
+              data_filtered[yr][org] = brutto;
+              data_filtered[yr]["Total"] = brutto;
+             }
+             else {
+              data_filtered[yr]["Month"][org] = months;
+              data_filtered[yr][org] = brutto;
+              data_filtered[yr]["Total"] += brutto;
+             }
+          }
+          for (const yr in data_filtered) {
+            for (const org in org_filtered) {
+              if (!(org in data_filtered[yr])) {
+                data_filtered[yr][org] = 0;
+              }
+            }
+          }
+          // end of data reconstruction
+
+          // prepare data for d3.stack
+          const keys = Object.keys(org_filtered);
+          var data_stack = [];
+          for (const yr in data_filtered) {
+            data_stack.push(data_filtered[yr]);
+          }
+          data_stack.sort(function(a, b) { return a.Year - b.Year; });
+          x.domain(data_stack.map(function(d) { return d.Year; }));
+          y.domain([0, d3.max(data_stack, function(d) { return d.Total; })]).nice();
           z.domain(keys);
 
           g.append("g")
             .selectAll("g")
-            .data(d3.stack().keys(keys)(data))
+            .data(d3.stack().keys(keys)(data_stack))
             .enter().append("g")
               .attr("fill", function(d) { return z(d.key); })
+              .attr("opacity", 0.7)
             .selectAll("rect")
             .data(function(d) { return d; })
             .enter().append("rect")
-              .attr("x", function(d) { return x(d.data.State); })
+              .attr("x", function(d) { return x(d.data.Year); })
               .attr("y", function(d) { return y(d[1]); })
               .attr("height", function(d) { return y(d[0]) - y(d[1]); })
               .attr("width", x.bandwidth())
-
             .on("mousemove", function(d) {
-                        tooltip.style("opacity", .9);
-                        tooltip.html(
-                          'XXX'
-                        )
-                        .style("left", (d3.event.pageX + 10) + "px")
-                        .style("top", (d3.event.pageY - 28) + "px");
-                      })
+                  var str = "";
+                  var count = 0;
+                  for (const i in keys) {
+                    const org = keys[i];
+                    if (d.data[org] > 0) {
+                      str += org + ": &euro; "  + d.data[org] + " (" + d.data.Month[org] + " months)" ;
+                      count++;
+                    }
+                  }
+                  if (count > 1) {
+                    str = str + '<br>Total: &euro; ' + d.data.Total;
+                  }
+
+
+                  tooltip.style("opacity", .9);
+                  tooltip.html(
+                    str
+                  )
+                  .style("left", (d3.event.pageX + 10) + "px")
+                  .style("top", (d3.event.pageY - 28) + "px");
+            })
             .on("mouseout", function(d) {
                    tooltip.style("opacity", 0);
             });
@@ -346,26 +393,6 @@
               .attr("font-weight", "bold")
               .attr("text-anchor", "start");
 
-          var legend = g.append("g")
-              .attr("font-family", "sans-serif")
-              .attr("font-size", 10)
-              .attr("text-anchor", "end")
-            .selectAll("g")
-            .data(keys.slice().reverse())
-            .enter().append("g")
-              .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-          legend.append("rect")
-              .attr("x", width - 19)
-              .attr("width", 19)
-              .attr("height", 19)
-              .attr("fill", z);
-
-          legend.append("text")
-              .attr("x", width - 24)
-              .attr("y", 9.5)
-              .attr("dy", "0.32em")
-              .text(function(d) { return d; });
         });
       }
       // end - generate_reward_stacked_chart
@@ -388,6 +415,7 @@
       // load private config if possible
       d3.json("private.config.json", function(error, config) {
         if (error) {
+          console.log("Failed to read private.config.json. The default config.json will be used.");
           // or load public config
           d3.json("config.json", function(error, config) {
             if (error) throw error;
