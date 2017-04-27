@@ -357,21 +357,17 @@
                   for (const i in keys) {
                     const org = keys[i];
                     if (d.data[org] > 0) {
-                      str += org + ": &euro; "  + d.data[org] + " (" + d.data.Month[org] + " months)" ;
+                      str += org + ": &euro; "  + d.data[org] + " (" + d.data.Month[org] + " months)</br>" ;
                       count++;
                     }
                   }
                   if (count > 1) {
                     str = str + '<br>Total: &euro; ' + d.data.Total;
                   }
-
-
                   tooltip.style("opacity", .9);
-                  tooltip.html(
-                    str
-                  )
-                  .style("left", (d3.event.pageX + 10) + "px")
-                  .style("top", (d3.event.pageY - 28) + "px");
+                  tooltip.html(str)
+                    .style("left", (d3.event.pageX + 10) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
             })
             .on("mouseout", function(d) {
                    tooltip.style("opacity", 0);
