@@ -197,7 +197,7 @@
                 tooltip.html(
                   '' + d.data.name +
                   '<br>Category: ' + d.data.category +
-                  '<br>File Commits: ' + d.data.value
+                  '<br>Commits: ' + d.data.value
                 )
                 .style("left", (d3.event.pageX + 10) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
@@ -294,10 +294,10 @@
         d3.csv("age-groups.csv", function(d, i, columns) {
           for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
           d.total = t;
+          
           return d;
         }, function(error, data) {
           if (error) throw error;
-
           var keys = data.columns.slice(1);
 
           data.sort(function(a, b) { return b.total - a.total; });
