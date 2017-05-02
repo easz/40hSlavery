@@ -60,10 +60,14 @@
         font-size: 15px;
         text-align: center;
         display: block;
-        margin: auto;
-        padding-bottom: 5px;
-        margin-bottom: 2rem;
-        margin-top: 1rem;
+      }
+      
+      #calendar-commit-files {
+        padding-bottom: 50px;
+      }
+
+      #stackedbar-reward {
+        padding-bottom: 50px;
       }
     </style>
   </head>
@@ -81,13 +85,11 @@
     <h3>Summary of Perforce Commits</h3>
     <svg id='treemap-commit-files' width="1024" height="768"></svg>
     <svg id='legend-treemap-commit-files' width="500"></svg>
-    <hr>
 
     <!-- chart - timeline -->
     <p style="text-align:center"><img class="icon" src="img/map.png"></p>
     <h3>Timeline of Perforce Commits</h3>
     <div id='calendar-commit-files'></div>
-    <br><br>
     <hr>
     <!-- chart - stacked bar -->
     <p style="text-align:center"><img class="icon" src="img/coin.png"></p>
@@ -99,6 +101,7 @@
 
     <!-- libs and scripts -->
     <script src="lib/d3.v4.8.0.js"></script>
+    <script src="lib/d3-scale-chromatic.v1.min.js"></script>
     <script>
 
       // generate treemap for commit files counts
@@ -268,6 +271,140 @@
       };
       // end - generate_commit_files_treemap
 
+      // generate_commit_files_calendar
+      var generate_commit_files_calendar = function(file, options={}) {
+
+        var width = 960,
+            height = 136,
+            cellSize = 15;
+        
+        function pathMonth(t0) {
+          var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
+              d0 = t0.getDay(), w0 = d3.timeWeek.count(d3.timeYear(t0), t0),
+              d1 = t1.getDay(), w1 = d3.timeWeek.count(d3.timeYear(t1), t1);
+          return "M" + (w0 + 1) * cellSize + "," + d0 * cellSize
+              + "H" + w0 * cellSize + "V" + 7 * cellSize
+              + "H" + w1 * cellSize + "V" + (d1 + 1) * cellSize
+              + "H" + (w1 + 1) * cellSize + "V" + 0
+              + "H" + (w0 + 1) * cellSize + "Z";
+        }
+
+        var formatPercent = d3.format(".1%");
+      
+        d3.csv(file, function(error, csv) {
+          if (error) throw error;
+          
+          // generate data
+
+          var calendar_data = {};
+
+          for (var i = 0; i < csv.length; i++) {
+            const entry = csv[i];
+            const date_iso_str = entry.date.replace(/\//g, "-");
+            if (!(date_iso_str in calendar_data)) {
+              calendar_data[date_iso_str] = {};
+              calendar_data[date_iso_str].line_add = 0;
+              calendar_data[date_iso_str].line_change = 0;
+              calendar_data[date_iso_str].line_del = 0;
+              calendar_data[date_iso_str].file_add = 0;
+              calendar_data[date_iso_str].file_change = 0;
+              calendar_data[date_iso_str].file_del = 0;                                          
+              calendar_data[date_iso_str].commit = 0;                                                        
+            }
+            calendar_data[date_iso_str].line_add    += +entry.line_add;
+            calendar_data[date_iso_str].line_change += +entry.line_change;
+            calendar_data[date_iso_str].line_del    += +entry.line_del;
+            calendar_data[date_iso_str].file_add    += +entry.file_add;
+            calendar_data[date_iso_str].file_change += +entry.file_change;
+            calendar_data[date_iso_str].file_del    += +entry.file_del;
+            calendar_data[date_iso_str].commit      += 1;                                                                    
+          }
+        
+          const yr_from = d3.min(d3.keys(calendar_data), function(d) { return parseInt(d.substr(0,4)); });
+          const yr_to = d3.max(d3.keys(calendar_data), function(d) { return parseInt(d.substr(0,4)); });
+          const intensity_min = d3.min(d3.values(calendar_data), function(d) {
+            return d.line_add + d.line_del + d.line_change; 
+          });
+          const intensity_max = d3.max(d3.values(calendar_data), function(d) {
+            return d.line_add + d.line_del + d.line_change; 
+          });
+          // chart
+
+          // TODO: better color code?
+          const color = d3.scaleSequential(
+                            d3.interpolateYlGn
+                        )
+                        .domain([intensity_min, intensity_max > 200 ? 200 : intensity_max])
+                        .clamp(true);
+
+          var svg = d3.select("#calendar-commit-files")
+            .selectAll("svg")
+            .data(d3.range(yr_from, 1 + yr_to))
+            .enter().append("svg")
+              .attr("width", width)
+              .attr("height", height)
+            .append("g")
+              .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
+            
+          svg.append("text")
+              .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
+              .attr("font-family", "sans-serif")
+              .attr("font-size", 10)
+              .attr("text-anchor", "middle")
+              .text(function(d) { return d; });
+            
+          var rect = svg.append("g")
+              .attr("fill", "none")
+              .attr("stroke", "#ccc")
+            .selectAll("rect")
+            .data(function(d) { return d3.timeDays(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+            .enter().append("rect")
+              .attr("width", cellSize)
+              .attr("height", cellSize)
+              .attr("x", function(d) { return d3.timeWeek.count(d3.timeYear(d), d) * cellSize; })
+              .attr("y", function(d) { return d.getDay() * cellSize; })
+              .datum(d3.timeFormat("%Y-%m-%d"));
+            
+          svg.append("g")
+              .attr("fill", "none")
+              .attr("stroke", "#000")
+            .selectAll("path")
+            .data(function(d) { return d3.timeMonths(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+            .enter().append("path")
+              .attr("d", pathMonth);
+
+          var tooltip = d3.select("#tooltip");
+
+          rect.filter(function(d) { return d in calendar_data; })
+              .attr("fill", function(d) { 
+                return color(calendar_data[d].line_add + calendar_data[d].line_del + calendar_data[d].line_change); 
+              })
+              .on("mousemove", function(d) {
+                  tooltip.style("opacity", .9);
+                  tooltip.html(
+                    d + '<br><br>'
+                    +
+                    'Commit: ' + calendar_data[d].commit + '<br>' 
+                    +                 
+                    'Line Added: ' + calendar_data[d].line_add + '<br>' + 
+                    'Line Deleted: ' + calendar_data[d].line_del + '<br>' + 
+                    'Line Modified: ' + calendar_data[d].line_change + '<br>' 
+                     + 
+                    'File Added: ' + calendar_data[d].file_add + '<br>' + 
+                    'File Deleted: ' + calendar_data[d].file_del + '<br>' + 
+                    'File Modified: ' + calendar_data[d].file_change                                                                                                    
+                  )
+                  .style("left", (d3.event.pageX + 10) + "px")
+                  .style("top", (d3.event.pageY - 28) + "px");
+              })
+              .on("mouseout", function(d) {
+                   tooltip.style("opacity", 0);
+              });
+        });
+
+      };
+      // end - generate_commit_files_calendar
+
       // generate reward stacked chart
       var generate_reward_stacked_chart = function(file, options={}) {
 
@@ -373,8 +510,6 @@
                   if (count > 1) {
                     str = str + '<br>Total: &euro; ' + d.data[TOTAL];
                   }
-
-
                   tooltip.style("opacity", .9);
                   tooltip.html(
                     str
@@ -414,8 +549,10 @@
         var info = d3.select("#info");
         info.append("h2")
             .text(config.info.name);
+
         // charts
         generate_commit_files_treemap(config.data.commit_files_json, config.options.commit_file_treemap);
+        generate_commit_files_calendar(config.data.commit_info_csv, config.commit_calendar);
         generate_reward_stacked_chart(config.data.monetary_csv, config.options.reward_stacked_chart);
       };
 
@@ -436,83 +573,5 @@
         }
       });
 
-
-      var generate_commit_files_calendar = function() {
-
-        var width = 960,
-            height = 136,
-            cellSize = 15;
-        
-        function pathMonth(t0) {
-          var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
-              d0 = t0.getDay(), w0 = d3.timeWeek.count(d3.timeYear(t0), t0),
-              d1 = t1.getDay(), w1 = d3.timeWeek.count(d3.timeYear(t1), t1);
-          return "M" + (w0 + 1) * cellSize + "," + d0 * cellSize
-              + "H" + w0 * cellSize + "V" + 7 * cellSize
-              + "H" + w1 * cellSize + "V" + (d1 + 1) * cellSize
-              + "H" + (w1 + 1) * cellSize + "V" + 0
-              + "H" + (w0 + 1) * cellSize + "Z";
-        }
-
-        var formatPercent = d3.format(".1%");
-        
-        var color = d3.scaleQuantize()
-            .domain([-0.05, 0.05])
-            .range(["#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837"]);
-        
-        var svg = d3.select("#calendar-commit-files")
-          .selectAll("svg")
-          .data(d3.range(2012, 2017))
-          .enter().append("svg")
-            .attr("width", width)
-            .attr("height", height)
-          .append("g")
-            .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
-        
-        svg.append("text")
-            .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
-            .attr("font-family", "sans-serif")
-            .attr("font-size", 10)
-            .attr("text-anchor", "middle")
-            .text(function(d) { return d; });
-        
-        var rect = svg.append("g")
-            .attr("fill", "none")
-            .attr("stroke", "#ccc")
-          .selectAll("rect")
-          .data(function(d) { return d3.timeDays(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-          .enter().append("rect")
-            .attr("width", cellSize)
-            .attr("height", cellSize)
-            .attr("x", function(d) { return d3.timeWeek.count(d3.timeYear(d), d) * cellSize; })
-            .attr("y", function(d) { return d.getDay() * cellSize; })
-            .datum(d3.timeFormat("%Y-%m-%d"));
-        
-        svg.append("g")
-            .attr("fill", "none")
-            .attr("stroke", "#000")
-          .selectAll("path")
-          .data(function(d) { return d3.timeMonths(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-          .enter().append("path")
-            .attr("d", pathMonth);
-        
-        d3.csv("dji.csv", function(error, csv) {
-          if (error) throw error;
-        
-          var data = d3.nest()
-              .key(function(d) { return d.Date; })
-              .rollup(function(d) { return (d[0].Close - d[0].Open) / d[0].Open; })
-            .object(csv);
-        
-          rect.filter(function(d) { return d in data; })
-              .attr("fill", function(d) { return color(data[d]); })
-            .append("title")
-              .text(function(d) { return d + ": " + formatPercent(data[d]); });
-        });
-
-      };
-
-
-      generate_commit_files_calendar();
     </script>
   </body>
