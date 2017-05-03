@@ -1,11 +1,10 @@
 <!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
 <!--
     Code adapted from various resource
      - https://codepen.io/freeCodeCamp/pen/KaNGNR
      - https://bl.ocks.org/mjfoster83/7c9bdfd714ab2f2e39dd5c09057a55a0
      - https://bl.ocks.org/mbostock/4063318
-     - http://bl.ocks.org/KathyZ/c2d4694c953419e0509b
-     - https://bl.ocks.org/mbostock/3884955
 -->
 <html>
   <head>
@@ -105,7 +104,7 @@
     <script>
 
       // generate treemap for commit files counts
-      var generate_commit_files_treemap = function(file, options={}) {
+      var generate_commit_files_treemap = function(file, options) {
 
         // load data
         d3.json(file, function(error, data){
@@ -135,7 +134,7 @@
           //// perform data conversion
           // append 'ROOT' ahead, filter out larger depth, and add all possible intermediate dirs
           var data_filtered = {};                          // filtered result       { "ROOT/d1/d2/f1.txt" : 10, "ROOT" : 0, "ROOT/d1" : 0, "ROOT/d1/d2" : 0 }
-          for (const path in data) {                       // original commit path  {"//d1/d2/f1.txt" : [4, 3, 2]}
+          for (var path in data) {                       // original commit path  {"//d1/d2/f1.txt" : [4, 3, 2]}
             const commit_count = data[path].length;
             if (commit_count < MIN_COUNT) { continue; }    // ignore file with few comits
             const path_rooted = "ROOT" + path.substr(1);   // append ROOT ahead "//d1/d2/f1.txt"" -> "ROOT/d1/d2/f1.txt" (depth: 0/1/2/3)
@@ -156,14 +155,14 @@
           }
           // construct treemap data
           var data_treemp = [];                     // conversion result     [ {"id":"ROOT/d1/d2/f1.txt", "value":10, "name":"//d1/d2/f1.txt"}, ... ]
-          for (const node in data_filtered) {
+          for (var node in data_filtered) {
             var item = {};
             item.id       = node;
             item.value    = data_filtered[node];
             item.name     = "/" + node.substr(4);    // get back the original path: ROOT/d1/d2/f1.txt -> //d1/d2/f1.txt
             item.category = "Undefined";             // category
-            for (const i in options.category) {
-              for (const pattern in options.category[i]) {
+            for (var i in options.category) {
+              for (var pattern in options.category[i]) {
                 const re = new RegExp(pattern);
                 if (item.name.match(re)) {
                   item.category = options.category[i][pattern];
@@ -272,7 +271,7 @@
       // end - generate_commit_files_treemap
 
       // generate_commit_files_calendar
-      var generate_commit_files_calendar = function(file, options={}) {
+      var generate_commit_files_calendar = function(file, options) {
 
         var width = 960,
             height = 136,
@@ -411,7 +410,7 @@
       // end - generate_commit_files_calendar
 
       // generate reward stacked chart
-      var generate_reward_stacked_chart = function(file, options={}) {
+      var generate_reward_stacked_chart = function(file, options) {
 
         var tooltip = d3.select("#tooltip");
 
@@ -469,8 +468,8 @@
               data_filtered[yr][TOTAL] += brutto;
              }
           }
-          for (const yr in data_filtered) {
-            for (const org in org_filtered) {
+          for (var yr in data_filtered) {
+            for (var org in org_filtered) {
               if (!(org in data_filtered[yr])) {
                 data_filtered[yr][org] = 0;
               }
@@ -481,7 +480,7 @@
           // prepare data for d3.stack
           const keys = Object.keys(org_filtered);
           var data_stack = [];
-          for (const yr in data_filtered) {
+          for (var yr in data_filtered) {
             data_stack.push(data_filtered[yr]);
           }
           data_stack.sort(function(a, b) { return a[YEAR] - b[YEAR]; });
@@ -505,7 +504,7 @@
             .on("mousemove", function(d) {
                   var str = "";
                   var count = 0;
-                  for (const i in keys) {
+                  for (var i in keys) {
                     const org = keys[i];
                     if (d.data[org] > 0) {
                       str += org + ': &euro; '  + d.data[org] + ' (' + d.data[MONTH][org] + ' months) <br>';
