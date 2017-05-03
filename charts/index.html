@@ -63,7 +63,7 @@
       }
       
       #calendar-commit-files {
-        padding-bottom: 50px;
+        padding-bottom: 100px;
       }
 
       #stackedbar-reward {
@@ -84,7 +84,7 @@
     <p style="text-align:center"><img class="icon" src="img/tome.png"></p>
     <h3>Summary of Perforce Commits</h3>
     <svg id='treemap-commit-files' width="1024" height="768"></svg>
-    <svg id='legend-treemap-commit-files' width="500"></svg>
+    <svg id='legend-treemap-commit-files' width="500" height="100"></svg>
 
     <!-- chart - timeline -->
     <p style="text-align:center"><img class="icon" src="img/map.png"></p>
@@ -127,7 +127,7 @@
                           .paddingInner(1);
 
           // options
-          const POW_SCALE_COUNT = (options.pow_scale_count === undefined) ? 1 : options.pow_scale_count; // pow scale for data count
+          const POW_SCALE = (options.pow_scale === undefined) ? 1 : options.pow_scale; // pow scale for data count
           const MAX_DEPTH = (options.max_depth === undefined) ? 7 : options.max_depth; // max depth to show
           const MIN_COUNT = (options.min_count === undefined) ? 2 : options.min_count; // min count to filter out
           const SHOW_TEXT = (options.show_text === undefined) ? true : options.show_text; // min count to filter out
@@ -178,7 +178,7 @@
           var stratify = d3.stratify()
                            .id(function(d) { return d.id; })
                            .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf("/")); });
-          var sum_scale = function(d) { return d.value === 0 ? 0 : Math.pow(d.value, POW_SCALE_COUNT); };
+          var sum_scale = function(d) { return d.value === 0 ? 0 : Math.pow(d.value, POW_SCALE); };
           var root = stratify(data_treemp)
                      .sum(sum_scale)
                      .sort(function(a, b) { return (b.value - a.value   ||
@@ -278,6 +278,8 @@
             height = 136,
             cellSize = 15;
         
+        const POW_SCALE = (options.pow_scale === undefined) ? 0.5 : options.pow_scale; // pow scale for data count
+
         function pathMonth(t0) {
           var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
               d0 = t0.getDay(), w0 = d3.timeWeek.count(d3.timeYear(t0), t0),
@@ -330,12 +332,13 @@
           });
           // chart
 
-          // TODO: better color code?
-          const color = d3.scaleSequential(
-                            d3.interpolateYlGn
-                        )
-                        .domain([intensity_min, intensity_max > 200 ? 200 : intensity_max])
-                        .clamp(true);
+          const scale = function(d) {
+            var v = (d - intensity_min) / (intensity_max-intensity_min);
+            v = Math.pow(v, POW_SCALE);
+            return v;
+          };
+          const color = d3.scaleSequential(d3.interpolateYlGn)
+                        .domain([0,1]);
 
           var svg = d3.select("#calendar-commit-files")
             .selectAll("svg")
@@ -377,7 +380,9 @@
 
           rect.filter(function(d) { return d in calendar_data; })
               .attr("fill", function(d) { 
-                return color(calendar_data[d].line_add + calendar_data[d].line_del + calendar_data[d].line_change); 
+                return color(scale(
+                  calendar_data[d].line_add + calendar_data[d].line_del + calendar_data[d].line_change
+                )); 
               })
               .on("mousemove", function(d) {
                   tooltip.style("opacity", .9);
@@ -552,7 +557,7 @@
 
         // charts
         generate_commit_files_treemap(config.data.commit_files_json, config.options.commit_file_treemap);
-        generate_commit_files_calendar(config.data.commit_info_csv, config.commit_calendar);
+        generate_commit_files_calendar(config.data.commit_info_csv, config.options.commit_calendar);
         generate_reward_stacked_chart(config.data.monetary_csv, config.options.reward_stacked_chart);
       };
 

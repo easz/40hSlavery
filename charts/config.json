@@ -17,11 +17,15 @@
     "reward_stacked_chart" :
     {
     },
+    "commit_calendar" :
+    {
+      "pow_scale" : 0.1
+    },
     "commit_file_treemap" :
     {
       "max_depth"       : 10,
       "min_count"       : 3,
-      "pow_scale_count" : 1,
+      "pow_scale"       : 1,
       "show_text"       : false,
       "category" : [
         { "//d0/"                   : "Proj X" },
