@@ -338,6 +338,7 @@
           };
           const color = d3.scaleSequential(d3.interpolateYlGn)
                         .domain([0,1]);
+          //var color = d3.interpolateCubehelixLong.gamma(2.2)("#deb000", "#009dac");
 
           var svg = d3.select("#calendar-commit-files")
             .selectAll("svg")
