@@ -23,6 +23,7 @@ if len(args) == 0:
 
 IN_JSON = args[0]
 OUT_JSON = "%s.annoymous" % args[0]
+OUT_MAP = "%s.map" % OUT_JSON
 
 in_json = open(IN_JSON, 'r') 
 DATA = json.load(in_json)
@@ -66,3 +67,11 @@ for key, value in DATA.items():
 out_json = open(OUT_JSON, 'w')
 out_json.write(json.dumps(data_annoymized, indent=0, sort_keys=True))
 out_json.close()
+
+mapping = dir_translate.copy()
+mapping.update(files_translate)
+inv_map = {v: k for k, v in mapping.iteritems()}
+
+out_map = open(OUT_MAP, 'w')
+out_map.write(json.dumps(mapping, indent=0, sort_keys=True))
+out_map.close()
