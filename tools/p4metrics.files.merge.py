@@ -14,7 +14,7 @@ from optparse import OptionParser
 #
 # command arguments / options
 # Example:
-# 		%prog -u max.mustermann -f @2017/01/01 -t @2017/01/31 -o output
+# 		%prog -t json *.json
 #
 parser = OptionParser(usage="usage: %prog [options] file1 file2 ...")
 parser.add_option("-t", dest="file_type",
