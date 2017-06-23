@@ -3,6 +3,7 @@
   {
     "commit_info_csv"   : "example/p4metrics.csv",
     "commit_files_json" : "example/p4metrics.files.json",
+    "time_tracking_pt"  : "",
     "monetary_csv"      : "example/monetary.csv"
   },
 
@@ -20,6 +21,9 @@
     "commit_calendar" :
     {
       "pow_scale" : 0.1
+    },
+    "time_tracking" :
+    {
     },
     "commit_file_treemap" :
     {

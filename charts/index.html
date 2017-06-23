@@ -90,6 +90,13 @@
     <h3>Timeline of Perforce Commits</h3>
     <div id='calendar-commit-files'></div>
     <hr>
+
+    <!-- chart - time tracking -->
+    <p style="text-align:center"><img class="icon" src="img/fire.png"></p>
+    <h3>Time Tracking</h3>
+    <svg id='time-tracking' width="800" height="600"></svg>
+    <hr>
+    
     <!-- chart - stacked bar -->
     <p style="text-align:center"><img class="icon" src="img/coin.png"></p>
     <h3>Reward</h3>
@@ -101,6 +108,7 @@
     <!-- libs and scripts -->
     <script src="lib/d3.v4.8.0.js"></script>
     <script src="lib/d3-scale-chromatic.v1.min.js"></script>
+    <script src="lib/zlib_and_gzip.v0.3.min.js"></script>
     <script>
 
       // generate treemap for commit files counts
@@ -410,6 +418,119 @@
       };
       // end - generate_commit_files_calendar
 
+      // generate time tracking chart
+      var generate_time_tracking_chart = function(file, options) {
+        
+        if (file == "")
+          return; 
+          
+        var load_pt = function(pt_data) {
+          const FILE_FORMAT_VERSION = 10;
+          const MAXTAGS = 15;
+          const NUM_PREFS = 6;
+
+          var pt_data_json = {};
+
+          var byte_read_pos = 0;
+
+          // read 4 bytes little endian data as a int value
+          var pack = function(data, start=0) {
+            return (data[start+3] << 24) | (data[start+2] << 16) | (data[start+1] << 8) | (data[start+0]);
+          };
+          // read the next 4 bytes little endian data and pack them as a int
+          var rint = function ()
+          {            
+            var val = pack(pt_data, byte_read_pos);
+            byte_read_pos += 4; // forward seeker
+            return val;
+          }
+          // read the next fixed {size} bytes as null terminated string. if {size} is 0, the read size is automatically decided
+          var rstr = function (size = 0)
+          {
+            var str = "";
+            if (size > 0)
+            {
+              for (var i = 0; i < size; i++) 
+              {
+                var char = pt_data[byte_read_pos+i];
+                if (char == 0)
+                  break;
+                str += String.fromCharCode(char);
+              }
+              byte_read_pos += size; // forward seeker
+            }
+            else
+            {
+              while (byte_read_pos < pt_data.length) {
+                var char = pt_data[byte_read_pos];
+                byte_read_pos++; // forward seeker
+                if (char == 0)
+                  break;
+                str += String.fromCharCode(char);
+              }
+            }
+            return str;
+          }
+
+          // meta
+          pt_data_json['version'] = rint();
+          if (pt_data_json['version'] > FILE_FORMAT_VERSION) 
+            throw "PT: trying to load db from newer version";
+          pt_data_json['magic'] = rint();
+          if (pt_data_json['version'] >= 6 && pt_data_json['magic'] != pack([0x46, 0x46, 0x54, 0x50])) /*check PTFF magic*/
+            throw "PT: not a PT database file";
+          if (pt_data_json['version'] >= 4) 
+          {
+            pt_data_json['numtags'] = rint();
+            if (pt_data_json['numtags'] > MAXTAGS)
+              throw "PT: wrong number of tags in file"
+            pt_data_json['tags'] = [];
+            for (var i=0; i<pt_data_json['numtags']; i++) 
+            {
+              var tag = {};
+              tag['name'] = rstr(32);
+              tag['color'] = rint();
+              pt_data_json['tags'][i] = tag;
+            }
+            if (pt_data_json['version'] < 6) 
+              rstr(10);
+            else
+              pt_data_json['minfilter'] = rint() / 60;
+            pt_data_json['foldlevel'] = rint();
+            pt_data_json['prefs'] = [];
+            if (pt_data_json['version'] >= 6) 
+            {
+              for (var i=0; i<NUM_PREFS-1; i++)
+                pt_data_json['prefs'][i] = rint();
+              if (pt_data_json['version'] >= 10)
+                pt_data_json['prefs'][NUM_PREFS-1] = rint();
+            }
+            if (pt_data_json['version'] == 8) 
+              rstr(24);
+          }
+          // node
+          var load_node = function()
+          {
+            var node = {};
+            node['name'] = rstr();
+            // ....
+            return node;
+          }
+          pt_data_json['root'] = load_node();
+
+          console.log(pt_data_json);
+        };
+        
+        d3.request(file)
+          .responseType("arraybuffer")
+          .response(function(xhr) { 
+            var compressed = new Zlib.Gunzip(new Uint8Array(xhr.response));
+            return compressed.decompress();
+          })
+          .get(load_pt);
+      };
+      // end - generate_time_tracking_chart
+
       // generate reward stacked chart
       var generate_reward_stacked_chart = function(file, options) {
 
@@ -556,6 +677,7 @@
         // charts
         generate_commit_files_treemap(config.data.commit_files_json, config.options.commit_file_treemap);
         generate_commit_files_calendar(config.data.commit_info_csv, config.options.commit_calendar);
+        generate_time_tracking_chart(config.data.time_tracking_pt, config.options.time_tracking);
         generate_reward_stacked_chart(config.data.monetary_csv, config.options.reward_stacked_chart);
       };
 
