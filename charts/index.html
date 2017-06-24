@@ -422,21 +422,25 @@
       // generate time tracking chart
       var generate_time_tracking_chart = function(file, options) {
         
-        if (file == "")
-          return; 
-
-        var load_pt = function(pt_data) {
-          var pt_data_json = PROCRASTITRACKER.load_db(pt_data);
+        var create_chart = function(pt_data_json) {
           console.log(pt_data_json);
         };
         
-        d3.request(file)
-          .responseType("arraybuffer")
-          .response(function(xhr) { 
-            var compressed = new Zlib.Gunzip(new Uint8Array(xhr.response));
-            return compressed.decompress();
-          })
-          .get(load_pt);
+        if (file)
+        {
+          d3.request(file)
+            .responseType("arraybuffer")
+            .response(function(xhr) { 
+              var compressed = new Zlib.Gunzip(new Uint8Array(xhr.response));
+              var decompressed = compressed.decompress();
+              return PROCRASTITRACKER.load_db(decompressed);
+            })
+            .get(create_chart);
+        }
+        else
+        {
+          // load demo data
+        }
       };
       // end - generate_time_tracking_chart
 
