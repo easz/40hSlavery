@@ -94,7 +94,7 @@
     <!-- chart - time tracking -->
     <p style="text-align:center"><img class="icon" src="img/fire.png"></p>
     <h3>Time Tracking</h3>
-    <div id='time-tracking'></div>
+    <div id='calender-time-tracking'></div>
     <hr>
     
     <!-- chart - stacked bar -->
@@ -110,6 +110,7 @@
     <script src="lib/d3-scale-chromatic.v1.min.js"></script>
     <script src="lib/zlib_and_gzip.v0.3.min.js"></script>
     <script src="lib/procrastitracker.js"></script>
+    <script src="lib/demo_data.js"></script>
     <script>
 
       // generate treemap for commit files counts
@@ -282,7 +283,7 @@
       // generate_commit_files_calendar
       var generate_commit_files_calendar = function(file, options) {
 
-        var width = 960,
+        const width = 960,
             height = 136,
             cellSize = 15;
 
@@ -305,7 +306,6 @@
           if (error) throw error;
 
           // generate data
-
           var calendar_data = {};
 
           for (var i = 0; i < csv.length; i++) {
@@ -422,8 +422,102 @@
       // generate time tracking chart
       var generate_time_tracking_chart = function(file, options) {
         
+        var create_calendar = function(pt_data_json) {
+          // data organized by date time
+          var calendar_data = PROCRASTITRACKER.parse_datetime(pt_data_json);
+          
+          const width = 960,
+            height = 136,
+            cellSize = 15;
+
+          const yr_from = d3.min(d3.keys(calendar_data), function(d) { return parseInt(d.substr(0,4)); });
+          const yr_to = d3.max(d3.keys(calendar_data), function(d) { return parseInt(d.substr(0,4)); });
+
+          var svg = d3.select("#calender-time-tracking")
+            .selectAll("svg")
+            .data(d3.range(yr_from, 1 + yr_to))
+            .enter().append("svg")
+              .attr("width", width)
+              .attr("height", height)
+            .append("g")
+              .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
+
+          svg.append("text")
+              .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
+              .attr("font-family", "sans-serif")
+              .attr("font-size", 18)
+              .attr("text-anchor", "middle")
+              .text(function(d) { return d; });
+
+          function pathMonth(t0) {
+            var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
+                d0 = t0.getDay(), w0 = d3.timeWeek.count(d3.timeYear(t0), t0),
+                d1 = t1.getDay(), w1 = d3.timeWeek.count(d3.timeYear(t1), t1);
+            return "M" + (w0 + 1) * cellSize + "," + d0 * cellSize
+                + "H" + w0 * cellSize + "V" + 7 * cellSize
+                + "H" + w1 * cellSize + "V" + (d1 + 1) * cellSize
+                + "H" + (w1 + 1) * cellSize + "V" + 0
+                + "H" + (w0 + 1) * cellSize + "Z";
+          }
+
+          var rect = svg.append("g")
+              .attr("fill", "none")
+              .attr("stroke", "#ccc")
+            .selectAll("rect")
+            .data(function(d) { return d3.timeDays(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+            .enter().append("rect")
+              .attr("width", cellSize)
+              .attr("height", cellSize)
+              .attr("x", function(d) { return d3.timeWeek.count(d3.timeYear(d), d) * cellSize; })
+              .attr("y", function(d) { return d.getDay() * cellSize; })
+              .datum(d3.timeFormat("%Y-%m-%d"));
+
+          svg.append("g")
+              .attr("fill", "none")
+              .attr("stroke", "#000")
+            .selectAll("path")
+            .data(function(d) { return d3.timeMonths(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+            .enter().append("path")
+              .attr("d", pathMonth);   
+
+          var tooltip = d3.select("#tooltip");
+
+          var day_activeseconds = {};
+          for (var day in calendar_data) {
+            var activeseconds = 0;
+            for (var time in calendar_data[day]) {
+              for (var app in calendar_data[day][time]) {
+                for (var path in calendar_data[day][time][app]) {
+                  activeseconds += calendar_data[day][time][app][path].activeseconds;
+                }
+              }
+            }
+            day_activeseconds[day] = activeseconds;
+          }          
+          var color = d3.scaleLinear()
+                        .domain([4*3600,8*3600])
+                        .range(["rgb(177, 184, 227)","rgb(98, 113, 200)"]);
+          rect.filter(function(d) { return d in calendar_data; })
+              .attr("fill", function(d) {     
+                return color(day_activeseconds[d]);           
+              })
+              .on("mousemove", function(d) {
+                tooltip.style("opacity", .9);
+                tooltip.html(
+                    d + '<br><br>' +
+                    'Time: ' + Math.floor(day_activeseconds[d]/3600) + " hours " + Math.ceil((day_activeseconds[d]%3600)/60) + " minutes"
+                  )
+                  .style("left", (d3.event.pageX + 10) + "px")
+                  .style("top", (d3.event.pageY - 28) + "px");
+              })
+              .on("mouseout", function(d) {
+                   tooltip.style("opacity", 0);
+              });
+        };
+
         var create_chart = function(pt_data_json) {
           console.log(pt_data_json);
+          create_calendar(pt_data_json);                                             
         };
         
         if (file)
@@ -439,7 +533,8 @@
         }
         else
         {
-          // load demo data
+          var data = DEMO_DATA.generate_pt();
+          create_chart(data); // demo data
         }
       };
       // end - generate_time_tracking_chart

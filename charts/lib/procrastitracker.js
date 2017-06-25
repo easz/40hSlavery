@@ -12,7 +12,7 @@ var PROCRASTITRACKER = (function () {
     const NUM_PREFS = 6;
 
     // result
-    var pt_data_json = {}; 
+    var pt_data_json = {};
     // seeker on pt_data
     var byte_read_pos = 0;
 
@@ -56,7 +56,8 @@ var PROCRASTITRACKER = (function () {
     };
     // read the next fixed {size} bytes as null terminated string.
     // if {size} is 0, the actual size to read is automatically decided (i.e. null terminated)
-    var rstr = function (size = 0) {
+    // by default the data is decoded as utf8 
+    var rstr = function (size = 0, utf8 = true) {
       var str = "";
       if (size > 0) {
         for (var i = 0; i < size; i++) {
@@ -76,6 +77,8 @@ var PROCRASTITRACKER = (function () {
           str += String.fromCharCode(char);
         }
       }
+      if (utf8)
+        return decodeURIComponent(escape(str));
       return str;
     };
 
@@ -84,15 +87,15 @@ var PROCRASTITRACKER = (function () {
     pt_data_json['version'] = version;
     if (version > FILE_FORMAT_VERSION)
       throw "PT: trying to load db from newer version";
-    pt_data_json['magic'] = rint();
-    if (version >= 6 && pt_data_json['magic'] != pack_int4([0x46, 0x46, 0x54, 0x50])) /*check PTFF magic*/
+    const magic = rint();
+    if ((version >= 6) && (magic != pack_int4([0x46, 0x46, 0x54, 0x50]))) /*check PTFF magic*/
       throw "PT: not a PT database file";
     if (version >= 4) {
-      pt_data_json['numtags'] = rint();
-      if (pt_data_json['numtags'] > MAXTAGS)
+      const numtags = rint();
+      if (numtags > MAXTAGS)
         throw "PT: wrong number of tags in file"
       pt_data_json['tags'] = [];
-      for (var i = 0; i < pt_data_json['numtags']; i++) {
+      for (var i = 0; i < numtags; i++) {
         var tag = {};
         tag['name'] = rstr(32);
         tag['color'] = "#" + ("000000" + rint().toString(16)).slice(-6);
@@ -123,12 +126,12 @@ var PROCRASTITRACKER = (function () {
         node['tagindex'] = rint();
       if (version >= 7)
         node['ishidden'] = (rchar() != 0 ? 1 : 0);
-      node['numberofdays'] = rint();
+      const numberofdays = rint();
       node['days'] = [];
-      var format = function(n) {
+      var format = function (n) {
         return ("00" + n).slice(-2);
       }
-      for (var i = 0; i < node['numberofdays']; i++) {
+      for (var i = 0; i < numberofdays; i++) {
         var day = {};
         if (version < 5) {
           var st = rsystemtime();
@@ -153,9 +156,9 @@ var PROCRASTITRACKER = (function () {
         day['scrollwheel'] = rint();
         node['days'][i] = day;
       }
-      node['numchildren'] = rint();
+      const numchildren = rint();
       node['children'] = [];
-      for (var i = 0; i < node['numchildren']; i++) {
+      for (var i = 0; i < numchildren; i++) {
         node['children'][i] = load_node();
       }
       return node;
@@ -170,7 +173,99 @@ var PROCRASTITRACKER = (function () {
     return pt_data_json;
   };
 
+  var parse_node_datetime = function (node, result, 
+                            stack = { name: [] }) {
+    const name = node.name;
+    const days = node.days;
+    const children = node.children;
+
+    /* push */
+    stack.name.push(name);
+
+    /* collect time */
+    if (days.length > 0) {
+      const app = ((stack.name.length > 1) ? stack.name[1] : stack.name[0]);
+      const path = ((stack.name.length > 2) ? (stack.name.slice(2).join("/")) : "/");
+      for (var i = 0; i < days.length; i++) {
+        var day = days[i];
+        var datetime = day.datetime;
+        var [date, time] = datetime.split("T");
+        var activeseconds = day.activeseconds;
+        var semiidleseconds = day.semiidleseconds;
+        (date in result)                  || (result[date]                  = {});
+        (time in result[date])            || (result[date][time]            = {});
+        (app  in result[date][time])      || (result[date][time][app]       = {});      
+        (path in result[date][time][app]) || (result[date][time][app][path] = {'activeseconds': 0, 'semiidleseconds': 0});
+        result[date][time][app][path].activeseconds += activeseconds;
+        result[date][time][app][path].semiidleseconds += semiidleseconds;
+      }
+    }
+
+    // process children
+    for (var i = 0; i < children.length; i++) {
+      var child = children[i];
+      parse_node_datetime(child, result, stack);
+    }
+
+    /* pop */
+    stack.name.pop();
+  };
+
+  var parse_node_path = function (node, result, 
+                            stack = { name: [] }) {
+    const name = node.name;
+    const days = node.days;
+    const children = node.children;
+
+    /* push */
+    stack.name.push(name);
+
+    /* collect path */
+    if (days.length > 0) {
+      const app = ((stack.name.length > 1) ? stack.name[1] : stack.name[0]);
+      const path = ((stack.name.length > 2) ? (stack.name.slice(2).join("/")) : "/");
+      (app  in result)      || (result[app]       = {});
+      (path in result[app]) || (result[app][path] = {});
+      for (var i = 0; i < days.length; i++) {
+        var day = days[i];
+        var datetime = day.datetime;
+        var [date, time] = datetime.split("T");
+        var activeseconds = day.activeseconds;
+        var semiidleseconds = day.semiidleseconds;
+        (date in result[app][path])       || (result[app][path][date]       = {});
+        (time in result[app][path][date]) || (result[app][path][date][time] = {'activeseconds': 0, 'semiidleseconds': 0});
+        result[app][path][date][time].activeseconds += activeseconds;
+        result[app][path][date][time].semiidleseconds += semiidleseconds;
+      }
+    }
+
+    // process children
+    for (var i = 0; i < children.length; i++) {
+      var child = children[i];
+      parse_node_path(child, result, stack);
+    }
+
+    /* pop */
+    stack.name.pop();                              
+  };
+
+  var parse_datetime = function (pt_data_json) {
+    var root = pt_data_json.root;
+    var result = {};
+    parse_node_datetime(root, result);
+    return result;
+  };
+
+  var parse_path = function (pt_data_json) {
+    var root = pt_data_json.root;
+    var result = {};
+    parse_node_path(root, result);
+    return result;
+  };
+
   return {
-    load_db : load_db
+    load_db: load_db,
+    parse_datetime: parse_datetime,
+    parse_path: parse_path
   }
 })();
