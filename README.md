@@ -1,8 +1,8 @@
-### How a 40 Hours Week was Spent and Rewarded for the Modern Slavery
+### How a 40-Hour Week is Spent and Rewarded for the Modern Slavery
 
 [Demo](https://easz.github.io/40hSlavery/charts/)
 
-Visualization of
+### Visualization of
 
   - [Perforce](https://www.perforce.com/) commit history
   - [Procrastitracker](https://github.com/aardappel/procrastitracker) automatic time tracking on Windows
