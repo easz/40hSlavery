@@ -5,6 +5,7 @@
      - https://codepen.io/freeCodeCamp/pen/KaNGNR
      - https://bl.ocks.org/mjfoster83/7c9bdfd714ab2f2e39dd5c09057a55a0
      - https://bl.ocks.org/mbostock/4063318
+     - https://bl.ocks.org/kerryrodden/7090426
 -->
 <html>
   <head>
@@ -65,6 +66,14 @@
         padding-bottom: 100px;
       }
 
+      #calender-time-tracking {
+        padding-bottom: 50px;
+      }
+
+      #sunburst-time-tracking {
+        padding-bottom: 100px;
+      }
+
       #stackedbar-reward {
         padding-bottom: 50px;
       }
@@ -95,6 +104,8 @@
     <p style="text-align:center"><img class="icon" src="img/fire.png"></p>
     <h3>Time Tracking</h3>
     <div id='calender-time-tracking'></div>
+    <div id="sequence-sunburst-time-tracking"></div>
+    <div id='sunburst-time-tracking'></div>
     <hr>
     
     <!-- chart - stacked bar -->
@@ -111,6 +122,7 @@
     <script src="lib/zlib_and_gzip.v0.3.min.js"></script>
     <script src="lib/procrastitracker.js"></script>
     <script src="lib/demo_data.js"></script>
+    <script src="lib/sunburst.js"></script>
     <script>
 
       // generate treemap for commit files counts
@@ -422,9 +434,7 @@
       // generate time tracking chart
       var generate_time_tracking_chart = function(file, options) {
         
-        var create_calendar = function(pt_data_json) {
-          // data organized by date time
-          var calendar_data = PROCRASTITRACKER.parse_datetime(pt_data_json);
+        var create_calendar = function(calendar_data) {
           
           const width = 960,
             height = 136,
@@ -519,8 +529,15 @@
               });
         };
 
+        var create_sunburst = function(calendar_data) {
+          SUNBURST.create_chart(calendar_data);
+        };
+
         var create_chart = function(pt_data_json) {
-          create_calendar(pt_data_json);                                             
+          // data organized by date time
+          var pt_data_sort_calendar = PROCRASTITRACKER.parse_datetime(pt_data_json);
+          create_calendar(pt_data_sort_calendar);
+          create_sunburst(pt_data_sort_calendar);
         };
         
         if (file)
