@@ -482,30 +482,34 @@
 
           var tooltip = d3.select("#tooltip");
 
-          var day_activeseconds = {};
+          var day_tracked_seconds = {};
           for (var day in calendar_data) {
             var activeseconds = 0;
+            var semiidleseconds = 0;
             for (var time in calendar_data[day]) {
               for (var app in calendar_data[day][time]) {
                 for (var path in calendar_data[day][time][app]) {
                   activeseconds += calendar_data[day][time][app][path].activeseconds;
+                  semiidleseconds += calendar_data[day][time][app][path].semiidleseconds;
                 }
               }
             }
-            day_activeseconds[day] = activeseconds;
+            day_tracked_seconds[day] = {activeseconds:activeseconds, semiidleseconds:semiidleseconds};
           }          
           var color = d3.scaleLinear()
-                        .domain([4*3600,8*3600])
+                        .domain([4*3600,7*3600])
                         .range(["rgb(177, 184, 227)","rgb(98, 113, 200)"]);
           rect.filter(function(d) { return d in calendar_data; })
               .attr("fill", function(d) {     
-                return color(day_activeseconds[d]);           
+                const t_time = day_tracked_seconds[d].activeseconds + day_tracked_seconds[d].semiidleseconds;
+                return color(t_time);           
               })
               .on("mousemove", function(d) {
+                const t_time = day_tracked_seconds[d].activeseconds + day_tracked_seconds[d].semiidleseconds;                
                 tooltip.style("opacity", .9);
                 tooltip.html(
-                    d + '<br><br>' +
-                    'Time: ' + Math.floor(day_activeseconds[d]/3600) + " hours " + Math.ceil((day_activeseconds[d]%3600)/60) + " minutes"
+                    d + '<br><br>' 
+                    + 'Tracked: ' + Math.floor(t_time/3600) + " hours " + Math.ceil((t_time%3600)/60) + " minutes" 
                   )
                   .style("left", (d3.event.pageX + 10) + "px")
                   .style("top", (d3.event.pageY - 28) + "px");
@@ -516,7 +520,6 @@
         };
 
         var create_chart = function(pt_data_json) {
-          console.log(pt_data_json);
           create_calendar(pt_data_json);                                             
         };
         
