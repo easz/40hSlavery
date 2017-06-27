@@ -4,8 +4,8 @@ var SUNBURST = (function () {
   var create_chart = function (calendar_data) {
 
     // Dimensions of sunburst.
-    var width = 750;
-    var height = 600;
+    var width = 980;
+    var height = 780;
     var radius = Math.min(width, height) / 2;
 
     // Breadcrumb dimensions: width, height, spacing, width of tip/tail.
@@ -47,7 +47,7 @@ var SUNBURST = (function () {
     d3.text("visit-sequences.csv", function (text) {
   //    var csv = d3.csvParseRows(text);
 //      var json = buildHierarchy(csv);
-      
+
       var json = demo_data;
       createVisualization(json);
     });
@@ -262,7 +262,7 @@ var SUNBURST = (function () {
 
     // Take a 2-column CSV and transform it into a hierarchical structure suitable
     // for a partition layout. The first column is a sequence of step names, from
-    // root to leaf, separated by hyphens. The second column is a count of how 
+    // root to leaf, separated by hyphens. The second column is a count of how
     // often that sequence occurred.
     function buildHierarchy(csv) {
       var root = { "name": "root", "children": [] };
@@ -304,7 +304,7 @@ var SUNBURST = (function () {
       return root;
     };
   };
-  
+
   return {
     create_chart: create_chart
   }
