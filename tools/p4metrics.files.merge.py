@@ -86,7 +86,7 @@ def merge_json(file_src, file_target):
             content = json.load(f)
             for file_path, commit_list in content.items():
                 if file_path in json_content:
-                    merged_list = sorted(json_content[file_path] + commit_list, reverse=True)
+                    merged_list = sorted(set(json_content[file_path] + commit_list), reverse=True)
                     json_content[file_path] = merged_list
                 else:
                     json_content[file_path] = commit_list

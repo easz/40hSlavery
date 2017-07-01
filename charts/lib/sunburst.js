@@ -6,8 +6,8 @@ var SUNBURST = (function () {
     var chart_data = DEMO_DATA.generate_sunburst();
 
     // Dimensions of sunburst.
-    var width = 750;
-    var height = 600;
+    var width = 780;
+    var height = 680;
     var radius = Math.min(width, height) / 2;
 
     // Breadcrumb dimensions: width, height, spacing, width of tip/tail.
@@ -256,7 +256,7 @@ var SUNBURST = (function () {
 
     // Take a 2-column CSV and transform it into a hierarchical structure suitable
     // for a partition layout. The first column is a sequence of step names, from
-    // root to leaf, separated by hyphens. The second column is a count of how 
+    // root to leaf, separated by hyphens. The second column is a count of how
     // often that sequence occurred.
     function buildHierarchy(csv) {
       var root = { "name": "root", "children": [] };
@@ -298,7 +298,7 @@ var SUNBURST = (function () {
       return root;
     };
   };
-  
+
   return {
     create_chart: create_chart
   }
