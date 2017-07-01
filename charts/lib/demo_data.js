@@ -1,15 +1,29 @@
 var DEMO_DATA = (function () {
 
-  var generate_pt = function () {
+  const app_path = {
+    firefox: ["google.com", "news.com", "fb.com", "tech.io", "amazon.cc", "cpp.io"],
+    outlook: ["/"],
+    devenv: ["proj 1", "proj 2", "proj 3", "proj 4"],
+    lync: ["alice", "bob", "carl", "tom"],
+    visio: ["proj 1", "proj 2", "proj 3", "proj 4"],
+    git: ["repo a", "repo b", "repo c"]
+  };
 
-    var app_path = {
-      firefox: ["google.com", "news.com", "fb.com", "tech.io", "amazon.cc", "cpp.io"],
-      outlook: ["/"],
-      devenv: ["proj 1", "proj 2", "proj 3", "proj 4"],
-      lync: ["alice", "bob", "carl", "tom"],
-      visio: ["proj 1", "proj 2", "proj 3", "proj 4"],
-      git: ["repo a", "repo b", "repo c"]
-    };
+
+  var generate_sunburst = function() {
+    var data = { name: 'root', children: []};
+    for (const app in app_path) {
+      var paths = [];
+      for (var path_i = 0; path_i < app_path[app].length; path_i++) {
+        const path = app_path[app][path_i];
+        paths.push({name:path, size: Math.random()});
+      }
+      data.children.push({ name: app, children: paths});
+    }
+    return data;
+  };
+
+  var generate_pt = function () {
 
     var data = {};
     // TODO: meta ...
@@ -64,7 +78,8 @@ var DEMO_DATA = (function () {
   };
 
   return {
-    generate_pt: generate_pt
+    generate_pt: generate_pt,
+    generate_sunburst: generate_sunburst
   }
 
 })();
