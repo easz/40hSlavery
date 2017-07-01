@@ -5,6 +5,26 @@ var SUNBURST = (function () {
     // FIXME: parse calendar_data to chart_data
     var chart_data = DEMO_DATA.generate_sunburst();
 
+    var fader  = function(color) { return d3.interpolateRgb(color, "#ffffff")(0.0); };
+    var colors = d3.scaleOrdinal(d3.schemeCategory20);
+    var colors_1 = {};
+
+    var create_color_spectrum = function(color, size) {
+      var interpolate = d3.scaleLinear()
+                        .domain([0,size])
+                        .range([color,"#ffffff"]);
+      var c = [];
+      for (var i=0; i<size; i++) {
+        c[i] = interpolate(i);
+      }
+      return d3.scaleOrdinal(c);
+    };
+
+    for (var i = 0; i < 20 ; i++)
+    {
+      colors_1[d3.schemeCategory20[i]] = create_color_spectrum(d3.schemeCategory20[i],6);
+    }
+
     // Dimensions of sunburst.
     var width = 780;
     var height = 680;
@@ -15,16 +35,7 @@ var SUNBURST = (function () {
       w: 75, h: 30, s: 3, t: 10
     };
 
-    // Mapping of step names to colors.
-    var colors = {
-      "home": "#5687d1",
-      "product": "#7b615c",
-      "search": "#de783b",
-      "account": "#6ab975",
-      "other": "#a173d1",
-      "end": "#bbbbbb"
-    };
-
+    
     // Total size of all segments; we set this later, after loading the data.
     var totalSize = 0;
 
@@ -51,8 +62,6 @@ var SUNBURST = (function () {
 
       // Basic setup of page elements.
       initializeBreadcrumbTrail();
-      drawLegend();
-      d3.select("#togglelegend").on("click", toggleLegend);
 
       // Bounding circle underneath the sunburst, to make it easier to detect
       // when the mouse leaves the parent g.
@@ -77,7 +86,12 @@ var SUNBURST = (function () {
         .attr("display", function (d) { return d.depth ? null : "none"; })
         .attr("d", arc)
         .attr("fill-rule", "evenodd")
-        .style("fill", function (d) { return colors[d.data.name]; })
+        .style("fill", function (d) {
+          if (d.depth == 1)
+            return colors(d.data.name);       
+          if (d.depth > 1)
+            return colors_1[colors(d.parent.data.name)](d.data.name);          
+        })
         .style("opacity", 1)
         .on("mouseover", mouseover);
 
@@ -109,7 +123,7 @@ var SUNBURST = (function () {
 
       // Fade all the segments.
       d3.selectAll("path")
-        .style("opacity", 0.3);
+        .style("opacity", 0.2);
 
       // Then highlight only those that are an ancestor of the current segment.
       vis.selectAll("path")
@@ -184,8 +198,12 @@ var SUNBURST = (function () {
 
       entering.append("svg:polygon")
         .attr("points", breadcrumbPoints)
-        .style("fill", function (d) { return colors[d.data.name]; });
-
+        .style("fill", function (d) { 
+          if (d.depth == 1) 
+            return colors(d.data.name); 
+          if (d.depth > 1) 
+            return colors_1[colors(d.parent.data.name)](d.data.name);
+        });
       entering.append("svg:text")
         .attr("x", (b.w + b.t) / 2)
         .attr("y", b.h / 2)
@@ -210,48 +228,6 @@ var SUNBURST = (function () {
       d3.select("#trail")
         .style("visibility", "");
 
-    }
-
-    function drawLegend() {
-
-      // Dimensions of legend item: width, height, spacing, radius of rounded rect.
-      var li = {
-        w: 75, h: 30, s: 3, r: 3
-      };
-
-      var legend = d3.select("#legend").append("svg:svg")
-        .attr("width", li.w)
-        .attr("height", d3.keys(colors).length * (li.h + li.s));
-
-      var g = legend.selectAll("g")
-        .data(d3.entries(colors))
-        .enter().append("svg:g")
-        .attr("transform", function (d, i) {
-          return "translate(0," + i * (li.h + li.s) + ")";
-        });
-
-      g.append("svg:rect")
-        .attr("rx", li.r)
-        .attr("ry", li.r)
-        .attr("width", li.w)
-        .attr("height", li.h)
-        .style("fill", function (d) { return d.value; });
-
-      g.append("svg:text")
-        .attr("x", li.w / 2)
-        .attr("y", li.h / 2)
-        .attr("dy", "0.35em")
-        .attr("text-anchor", "middle")
-        .text(function (d) { return d.key; });
-    }
-
-    function toggleLegend() {
-      var legend = d3.select("#legend");
-      if (legend.style("visibility") == "hidden") {
-        legend.style("visibility", "");
-      } else {
-        legend.style("visibility", "hidden");
-      }
     }
 
     // Take a 2-column CSV and transform it into a hierarchical structure suitable
