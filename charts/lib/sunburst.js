@@ -1,9 +1,70 @@
 var SUNBURST = (function () {
 
-  var create_chart = function (calendar_data) {
+  var create_chart = function (calendar_data, options) {
 
-    // FIXME: parse calendar_data to chart_data
-    var chart_data = DEMO_DATA.generate_sunburst();
+    // populate data /* var chart_data = DEMO_DATA.generate_sunburst(); */
+    var chart_data = { name: 'root', children: []}; // init
+    {
+      // filter_app preparation from options
+      var filter_app_map = [];
+      for (const i in options.filter_app) {
+        for (const to_label in options.filter_app[i]) {
+          for (const j in options.filter_app[i][to_label]) {
+            const from_regexp = options.filter_app[i][to_label][j];
+            var entry = {};
+            entry[from_regexp] = to_label;
+            filter_app_map.push(entry);
+          }
+        }
+      }
+      // perform filter and aggregate
+      var temp_data = {/*app->path->seconds*/};
+      for (const date in calendar_data) {
+        for (const time in calendar_data[date]) {
+          for (const app_raw in calendar_data[date][time]) {
+            // filter and replace app names
+            var filtered = false;
+            var app = app_raw;
+            for (var i in filter_app_map) {
+              for (var pattern in filter_app_map[i]) {
+                const re = new RegExp(pattern);
+                if (app_raw.match(re)) {
+                  app = filter_app_map[i][pattern];
+                  filtered = true;
+                }
+                if (filtered) { break; }
+              }
+              if (filtered) { break; }
+            }
+            // set to as "Etc." by default
+            if (options.show_etc_app && !filtered) {
+              const etc_label = "Etc.";
+              app = etc_label;
+              console.log("un-filtered app: ", app_raw);
+              var entry = {};
+              entry["^"+app_raw+"$"] = etc_label;
+              filter_app_map.push(entry);
+            }
+            (app in temp_data) || (temp_data[app] = {});
+            for (const path in calendar_data[date][time][app_raw]) {
+              (path in temp_data[app]) || (temp_data[app][path] = { activeseconds: 0, semiidleseconds: 0 });
+              temp_data[app][path].activeseconds += calendar_data[date][time][app_raw][path].activeseconds;
+              temp_data[app][path].semiidleseconds += calendar_data[date][time][app_raw][path].semiidleseconds;
+            }
+          }
+        }
+      }
+      // fill resulting chart_data
+      for (const app in temp_data) {
+        var app_node = {name: app, children:[]};
+        for (const path in temp_data[app]) {
+          const leaf = temp_data[app][path];
+          var path_node = {name: path, size: leaf.activeseconds + leaf.semiidleseconds};
+          app_node.children.push(path_node); // path
+        }
+        chart_data.children.push(app_node); // app
+      }
+    }
 
     var fader  = function(color) { return d3.interpolateRgb(color, "#ffffff")(0.0); };
     var colors = d3.scaleOrdinal(d3.schemeCategory20);
@@ -26,16 +87,15 @@ var SUNBURST = (function () {
     }
 
     // Dimensions of sunburst.
-    var width = 780;
+    var width = 800;
     var height = 680;
     var radius = Math.min(width, height) / 2;
 
     // Breadcrumb dimensions: width, height, spacing, width of tip/tail.
     var b = {
-      w: 75, h: 30, s: 3, t: 10
+      w: 250, h: 35, s: 3, t: 10
     };
 
-    
     // Total size of all segments; we set this later, after loading the data.
     var totalSize = 0;
 
@@ -55,10 +115,10 @@ var SUNBURST = (function () {
       .innerRadius(function (d) { return Math.sqrt(d.y0); })
       .outerRadius(function (d) { return Math.sqrt(d.y1); });
 
-    createVisualization(chart_data);
-    
+    createVisualization(chart_data, options);
+
     // Main function to draw and set up the visualization, once we have the data.
-    function createVisualization(json) {
+    function createVisualization(json, options) {
 
       // Basic setup of page elements.
       initializeBreadcrumbTrail();
@@ -88,12 +148,13 @@ var SUNBURST = (function () {
         .attr("fill-rule", "evenodd")
         .style("fill", function (d) {
           if (d.depth == 1)
-            return colors(d.data.name);       
+            return colors(d.data.name);
           if (d.depth > 1)
-            return colors_1[colors(d.parent.data.name)](d.data.name);          
+            return colors_1[colors(d.parent.data.name)](d.data.name);
         })
         .style("opacity", 1)
-        .on("mouseover", mouseover);
+        .on("mouseenter", mouseenter)
+        .on("mousemove", mousemove);
 
       // Add the mouseleave handler to the bounding circle.
       d3.select("#container").on("mouseleave", mouseleave);
@@ -102,8 +163,18 @@ var SUNBURST = (function () {
       totalSize = path.datum().value;
     };
 
+    var tooltip = d3.select("#tooltip");
+
+    // show tooltip
+    function mousemove(d) {
+      tooltip.style("opacity", .9);
+      tooltip.html(d.data.name)
+      .style("left", (d3.event.pageX + 10) + "px")
+      .style("top", (d3.event.pageY - 28) + "px");
+    }
+
     // Fade all but the current sequence, and show it in the breadcrumb trail.
-    function mouseover(d) {
+    function mouseenter(d) {
 
       var percentage = (100 * d.value / totalSize).toPrecision(3);
       var percentageString = percentage + "%";
@@ -111,12 +182,13 @@ var SUNBURST = (function () {
         percentageString = "< 0.1%";
       }
 
+      /*
       d3.select("#percentage")
         .text(percentageString);
 
       d3.select("#explanation")
         .style("visibility", "");
-
+      */
       var sequenceArray = d.ancestors().reverse();
       sequenceArray.shift(); // remove root node from the array
       updateBreadcrumbs(sequenceArray, percentageString);
@@ -136,12 +208,15 @@ var SUNBURST = (function () {
     // Restore everything to full opacity when moving off the visualization.
     function mouseleave(d) {
 
+      // hide tooltip
+      tooltip.style("opacity", 0);
+
       // Hide the breadcrumb trail
       d3.select("#trail")
         .style("visibility", "hidden");
 
       // Deactivate all segments during transition.
-      d3.selectAll("path").on("mouseover", null);
+      d3.selectAll("path").on("mouseenter", null);
 
       // Transition each segment to full opacity and then reactivate it.
       d3.selectAll("path")
@@ -149,11 +224,13 @@ var SUNBURST = (function () {
         .duration(1000)
         .style("opacity", 1)
         .on("end", function () {
-          d3.select(this).on("mouseover", mouseover);
+          d3.select(this).on("mouseenter", mouseenter);
         });
 
+      /*
       d3.select("#explanation")
         .style("visibility", "hidden");
+      */
     }
 
     function initializeBreadcrumbTrail() {
@@ -198,10 +275,10 @@ var SUNBURST = (function () {
 
       entering.append("svg:polygon")
         .attr("points", breadcrumbPoints)
-        .style("fill", function (d) { 
-          if (d.depth == 1) 
-            return colors(d.data.name); 
-          if (d.depth > 1) 
+        .style("fill", function (d) {
+          if (d.depth == 1)
+            return colors(d.data.name);
+          if (d.depth > 1)
             return colors_1[colors(d.parent.data.name)](d.data.name);
         });
       entering.append("svg:text")
@@ -209,7 +286,9 @@ var SUNBURST = (function () {
         .attr("y", b.h / 2)
         .attr("dy", "0.35em")
         .attr("text-anchor", "middle")
-        .text(function (d) { return d.data.name; });
+        .attr("font-size", "16")
+        .attr("font-weight", "bold")
+        .text(function (d) { return d.data.name.substr(0, 20) + (d.data.name.length > 20 ? "..." : ""); });
 
       // Merge enter and update selections; set position for all nodes.
       entering.merge(trail).attr("transform", function (d, i) {
@@ -218,10 +297,12 @@ var SUNBURST = (function () {
 
       // Now move and update the percentage at the end.
       d3.select("#trail").select("#endlabel")
-        .attr("x", (nodeArray.length + 0.5) * (b.w + b.s))
+        .attr("x", (nodeArray.length + 0.5) * (b.w + b.s) - 50)
         .attr("y", b.h / 2)
         .attr("dy", "0.35em")
         .attr("text-anchor", "middle")
+        .attr("font-size", "20")
+        .attr("font-weight", "bold")
         .text(percentageString);
 
       // Make the breadcrumb trail visible, if it's hidden.

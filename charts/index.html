@@ -107,7 +107,7 @@
     <div id="sequence-sunburst-time-tracking"></div>
     <div id='sunburst-time-tracking'></div>
     <hr>
-    
+
     <!-- chart - stacked bar -->
     <p style="text-align:center"><img class="icon" src="img/coin.png"></p>
     <h3>Reward</h3>
@@ -433,9 +433,9 @@
 
       // generate time tracking chart
       var generate_time_tracking_chart = function(file, options) {
-        
+
         var create_calendar = function(calendar_data) {
-          
+
           const width = 960,
             height = 136,
             cellSize = 15;
@@ -488,7 +488,7 @@
             .selectAll("path")
             .data(function(d) { return d3.timeMonths(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
             .enter().append("path")
-              .attr("d", pathMonth);   
+              .attr("d", pathMonth);
 
           var tooltip = d3.select("#tooltip");
 
@@ -505,21 +505,21 @@
               }
             }
             day_tracked_seconds[day] = {activeseconds:activeseconds, semiidleseconds:semiidleseconds};
-          }          
+          }
           var color = d3.scaleLinear()
                         .domain([4*3600,7*3600])
                         .range(["rgb(177, 184, 227)","rgb(98, 113, 200)"]);
           rect.filter(function(d) { return d in calendar_data; })
-              .attr("fill", function(d) {     
+              .attr("fill", function(d) {
                 const t_time = day_tracked_seconds[d].activeseconds + day_tracked_seconds[d].semiidleseconds;
-                return color(t_time);           
+                return color(t_time);
               })
               .on("mousemove", function(d) {
-                const t_time = day_tracked_seconds[d].activeseconds + day_tracked_seconds[d].semiidleseconds;                
+                const t_time = day_tracked_seconds[d].activeseconds + day_tracked_seconds[d].semiidleseconds;
                 tooltip.style("opacity", .9);
                 tooltip.html(
-                    d + '<br><br>' 
-                    + 'Tracked: ' + Math.floor(t_time/3600) + " hours " + Math.ceil((t_time%3600)/60) + " minutes" 
+                    d + '<br><br>'
+                    + 'Tracked: ' + Math.floor(t_time/3600) + " hours " + Math.ceil((t_time%3600)/60) + " minutes"
                   )
                   .style("left", (d3.event.pageX + 10) + "px")
                   .style("top", (d3.event.pageY - 28) + "px");
@@ -530,7 +530,7 @@
         };
 
         var create_sunburst = function(calendar_data) {
-          SUNBURST.create_chart(calendar_data);
+          SUNBURST.create_chart(calendar_data, options);
         };
 
         var create_chart = function(pt_data_json) {
@@ -539,12 +539,12 @@
           create_calendar(pt_data_sort_calendar);
           create_sunburst(pt_data_sort_calendar);
         };
-        
+
         if (file)
         {
           d3.request(file)
             .responseType("arraybuffer")
-            .response(function(xhr) { 
+            .response(function(xhr) {
               var compressed = new Zlib.Gunzip(new Uint8Array(xhr.response));
               var decompressed = compressed.decompress();
               return PROCRASTITRACKER.load_db(decompressed);

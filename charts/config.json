@@ -17,6 +17,7 @@
   {
     "reward_stacked_chart" :
     {
+      "colors" : ["#98abc5", "#8a89a6"]
     },
     "commit_calendar" :
     {
@@ -24,6 +25,10 @@
     },
     "time_tracking" :
     {
+      "filter_app": [
+        { "Internet Browser" : [ "^firefox$", "^opera$", "^iexplore$" ] }
+      ],
+      "show_etc_app" : false
     },
     "commit_file_treemap" :
     {
