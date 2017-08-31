@@ -1,10 +1,11 @@
 {
   "data" :
   {
-    "commit_info_csv"   : "example/p4metrics.csv",
-    "commit_files_json" : "example/p4metrics.files.json",
-    "time_tracking_pt"  : "",
-    "monetary_csv"      : "example/monetary.csv"
+    "commit_info_csv"        : "example/p4metrics.csv",
+    "commit_files_json"      : "example/p4metrics.files.json",
+    "time_tracking_pt"       : "",
+    "time_tracking_outlook"  : "",
+    "monetary_csv"           : "example/monetary.csv"
   },
 
   "info" :
@@ -28,7 +29,8 @@
       "filter_app": [
         { "Internet Browser" : [ "^firefox$", "^opera$", "^iexplore$" ] }
       ],
-      "show_etc_app" : false
+      "show_etc_app" : false,
+      "exclude_meeting" : [ "^Canceled" ]
     },
     "commit_file_treemap" :
     {

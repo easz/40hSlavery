@@ -432,7 +432,7 @@
       // end - generate_commit_files_calendar
 
       // generate time tracking chart
-      var generate_time_tracking_chart = function(file, options) {
+      var generate_time_tracking_chart = function(file, file_outlook, options) {
 
         var create_calendar = function(calendar_data) {
 
@@ -533,11 +533,84 @@
           SUNBURST.create_chart(calendar_data, options);
         };
 
-        var create_chart = function(pt_data_json) {
-          // data organized by date time
-          var pt_data_sort_calendar = PROCRASTITRACKER.parse_datetime(pt_data_json);
+        var create_chart_2 = function(pt_data_sort_calendar) {
           create_calendar(pt_data_sort_calendar);
           create_sunburst(pt_data_sort_calendar);
+        };
+
+        var create_chart_1 = function(pt_data_json) {
+          // make data organized by date time
+          var pt_data_sort_calendar = PROCRASTITRACKER.parse_datetime(pt_data_json);
+          // load extra meeting data?
+          if (file_outlook) {
+            // load extra meeting calendar
+            d3.csv(file_outlook, function(error, meeting_csv) {
+              if (error) throw error;
+
+              const app_raw_label = "Outlook_Meeting";
+              for (var i = 0; i < meeting_csv.length; i++) {
+                const str_start_date = meeting_csv[i]["Start Date"];
+                const str_end_date = meeting_csv[i]["End Date"];
+                const str_start_time = meeting_csv[i]["Start Time"];
+                const str_end_time = meeting_csv[i]["End Time"];
+                const str_is_all_day = meeting_csv[i]["All day event"];
+                const str_is_private = meeting_csv[i]["Private"];
+                const str_subject = meeting_csv[i]["Subject"];
+
+                const a_start_date = str_start_date.split(".");
+                const a_end_date = str_end_date.split(".");
+
+                // XXX: default with europian german time format dd.mm.yyyy
+                var extract_date_string = function(date) {
+                  var pad = function(number) { return (number < 10) ? ("0" + number) : "" + number; }
+                  return "" + date.getFullYear() + "-" + pad(date.getMonth()+1) + "-" + pad(date.getDate());
+                }
+                var calculate_duration_seconds = function(str_begin_time, str_end_time) {
+                  const a_start_time = str_begin_time.split(":");
+                  const a_end_time = str_end_time.split(":");
+                  const d1 = new Date(2000,0,1, parseInt(a_start_time[0]), parseInt(a_start_time[1]), parseInt(a_start_time[2]));
+                  const d2 = new Date(2000,0,1, parseInt(a_end_time[0]), parseInt(a_end_time[1]), parseInt(a_end_time[2]));
+                  return (d2 - d1) / 1000;
+                }
+                // insert data to pt_data_sort_calendar
+                for (var start = new Date(parseInt(a_start_date[2]), parseInt(a_start_date[1])-1, parseInt(a_start_date[0]));
+                    start <= new Date(parseInt(a_end_date[2]), parseInt(a_end_date[1])-1, parseInt(a_end_date[0]));
+                    start.setDate(start.getDate() + 1)) {
+                  const path = str_subject; // XXX: encoding??
+                  { // filter out undesired meeting
+                    // No private stuff
+                    if (str_is_private != "False")
+                      break;
+                    // exclusion list
+                    var is_excluded = false;
+                    for (const i in options.exclude_meeting) {
+                      const re = new RegExp(options.exclude_meeting[i]);
+                      if (path.match(re)) {
+                        is_excluded = true;
+                        break;
+                      }
+                    }
+                    if (is_excluded)
+                      break;
+                  }
+                  const date = extract_date_string(start);
+                  const time = (str_is_all_day == "False") ? str_start_time : "09:00:00";
+                  const time_end = (str_is_all_day == "False") ? str_end_time : "17:00:00";
+                  const duraion = calculate_duration_seconds(time, time_end);
+                  (date in pt_data_sort_calendar) || (pt_data_sort_calendar[date] = {});
+                  (time in pt_data_sort_calendar[date]) || (pt_data_sort_calendar[date][time] = {});
+                  pt_data_sort_calendar[date][time][app_raw_label] = {};
+                  pt_data_sort_calendar[date][time][app_raw_label][path] = { activeseconds: duraion, semiidleseconds: 0};
+                }
+              }
+
+              create_chart_2(pt_data_sort_calendar);
+            });
+          }
+          else {
+            // w/o extra meeting calendar
+            create_chart_2(pt_data_sort_calendar);
+          }
         };
 
         if (file)
@@ -549,12 +622,12 @@
               var decompressed = compressed.decompress();
               return PROCRASTITRACKER.load_db(decompressed);
             })
-            .get(create_chart);
+            .get(create_chart_1);
         }
         else
         {
           var data = DEMO_DATA.generate_pt();
-          create_chart(data); // demo data
+          create_chart_1(data); // demo data
         }
       };
       // end - generate_time_tracking_chart
@@ -705,7 +778,7 @@
         // charts
         generate_commit_files_treemap(config.data.commit_files_json, config.options.commit_file_treemap);
         generate_commit_files_calendar(config.data.commit_info_csv, config.options.commit_calendar);
-        generate_time_tracking_chart(config.data.time_tracking_pt, config.options.time_tracking);
+        generate_time_tracking_chart(config.data.time_tracking_pt, config.data.time_tracking_outlook, config.options.time_tracking);
         generate_reward_stacked_chart(config.data.monetary_csv, config.options.reward_stacked_chart);
       };
 

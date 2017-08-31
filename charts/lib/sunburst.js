@@ -72,7 +72,7 @@ var SUNBURST = (function () {
 
     var create_color_spectrum = function(color, size) {
       var interpolate = d3.scaleLinear()
-                        .domain([0,size])
+                        .domain([-1,size])
                         .range([color,"#ffffff"]);
       var c = [];
       for (var i=0; i<size; i++) {
