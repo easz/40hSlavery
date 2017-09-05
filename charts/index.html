@@ -511,11 +511,13 @@
                         .range(["rgb(177, 184, 227)","rgb(98, 113, 200)"]);
           rect.filter(function(d) { return d in calendar_data; })
               .attr("fill", function(d) {
-                const t_time = day_tracked_seconds[d].activeseconds + day_tracked_seconds[d].semiidleseconds;
+                // XXX: count the half of semiidleseconds
+                const t_time = day_tracked_seconds[d].activeseconds + 0.5*day_tracked_seconds[d].semiidleseconds;
                 return color(t_time);
               })
               .on("mousemove", function(d) {
-                const t_time = day_tracked_seconds[d].activeseconds + day_tracked_seconds[d].semiidleseconds;
+                // XXX: count the half of semiidleseconds
+                const t_time = day_tracked_seconds[d].activeseconds + 0.5*day_tracked_seconds[d].semiidleseconds;
                 tooltip.style("opacity", .9);
                 tooltip.html(
                     d + '<br><br>'

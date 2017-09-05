@@ -59,7 +59,8 @@ var SUNBURST = (function () {
         var app_node = {name: app, children:[]};
         for (const path in temp_data[app]) {
           const leaf = temp_data[app][path];
-          var path_node = {name: path, size: leaf.activeseconds + leaf.semiidleseconds};
+          // XXX: count the half of semiidleseconds
+          var path_node = {name: path, size: leaf.activeseconds + 0.5*leaf.semiidleseconds};
           app_node.children.push(path_node); // path
         }
         chart_data.children.push(app_node); // app
