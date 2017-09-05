@@ -190,6 +190,13 @@ var SUNBURST = (function () {
       d3.select("#explanation")
         .style("visibility", "");
       */
+
+      // FIXME: sometimes this is triggered by a Date data! why?
+      if (typeof d.ancestors === "undefined")
+      {
+        return;
+      }
+
       var sequenceArray = d.ancestors().reverse();
       sequenceArray.shift(); // remove root node from the array
       updateBreadcrumbs(sequenceArray, percentageString);
